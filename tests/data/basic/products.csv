@@ -1,0 +1,7 @@
+product_id,product_name,product_price,product_description,product_category,product_image_url
+PRODUCT-001,Product One,19.99,"Lorem ipsum dolor sit amet, consectetur adipiscing elit.",Electronics,"https://example.com/product-one.jpg"
+PRODUCT-002,Product Two,29.99,"Lorem ipsum dolor sit amet, consectetur adipiscing elit.",Electronics,"https://example.com/product-two.jpg"
+PRODUCT-003,Product Three,39.99,"Lorem ipsum dolor sit amet, consectetur adipiscing elit.",Electronics,"https://example.com/product-three.jpg"
+PRODUCT-004,Product Four,49.99,"Lorem ipsum dolor sit amet, consectetur adipiscing elit.",Electronics,"https://example.com/product-four.jpg"
+PRODUCT-005,Product Five,59.99,"Lorem ipsum dolor sit amet, consectetur adipiscing elit.",Electronics,"https://example.com/product-five.jpg"
+PRODUCT-006,Product Six,69.99,"Lorem ipsum dolor sit amet, consectetur adipiscing elit.",Electronics,"https://example.com/product-six.jpg"
