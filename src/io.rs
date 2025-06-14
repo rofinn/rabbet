@@ -111,13 +111,13 @@ pub fn config() {
 /// let df = read_data(&"-".to_string(), None)?;
 /// ```
 pub fn read_data(
-    source: &String,
+    source: &str,
     separator: Option<char>,
 ) -> Result<DataFrame, Box<dyn std::error::Error>> {
     let sep = separator.unwrap_or(',') as u8;
     let mut buffer = String::new();
 
-    match source.as_str() {
+    match source {
         "-" => io::stdin().read_to_string(&mut buffer)?,
         _ => File::open(source)?.read_to_string(&mut buffer)?,
     };

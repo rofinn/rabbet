@@ -1,5 +1,6 @@
 use clap::{Args, ValueEnum};
-use itertools::{chain, izip};
+use itertools::izip;
+use once_cell::sync::Lazy;
 use polars::prelude::{
     DataFrame, DataFrameJoinOps, JoinArgs as PolarsJoinArgs, JoinType as PolarsJoinType,
 };
@@ -8,6 +9,8 @@ use std::collections::HashMap;
 use std::io;
 
 use crate::io::{read_data, write_data};
+
+static RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\w+\.\w+(=\w+\.\w+)+").unwrap());
 
 #[derive(Debug, Clone, Copy, ValueEnum, PartialEq, Eq)]
 pub enum JoinType {
@@ -99,10 +102,10 @@ struct Table {
 }
 
 impl Table {
-    fn load(path: &String, name: String, on: &[String]) -> Table {
+    fn load(path: &str, name: &str, on: &[String]) -> Table {
         Table {
-            df: read_data(path, Some(',')).unwrap(),
-            name: name,
+            df: read_data(&path, Some(',')).unwrap(),
+            name: name.to_string(),
             on: on.to_vec(),
         }
     }
@@ -160,36 +163,34 @@ fn create_tables(
     let global_cols = on.get(&"*".to_string()).cloned().unwrap_or_default();
 
     izip!(paths, labels).map(move |(p, l)| {
-        let on_cols: Vec<String> = chain(
-            global_cols.iter(),
-            on.get(&l).cloned().unwrap_or_default().iter(),
-        )
-        .cloned()
-        .collect();
+        let mut on_cols = global_cols.clone();
+        if let Some(cols) = on.get(&l) {
+            on_cols.extend_from_slice(cols);
+        }
 
         assert!(!on_cols.is_empty(), "No columns specified for join");
-        Table::load(p, l, &on_cols)
+        Table::load(p, &l, &on_cols)
     })
 }
 
 fn parse_on_strings(on: &[String]) -> HashMap<String, Vec<String>> {
-    let regex = Regex::new(r"\w+\.\w+(=\w+\.\w+)+").unwrap();
-    let mut result: HashMap<String, Vec<String>> = HashMap::new();
+    let default_key = "*".to_string();
+    let mut result: HashMap<String, Vec<String>> = HashMap::with_capacity(on.len());
     let insert = |result: &mut HashMap<String, Vec<String>>, label: &str, column: &str| {
         result
             .entry(label.to_string())
-            .or_insert(Vec::new())
+            .or_insert_with(Vec::new)
             .push(column.to_string());
     };
 
     for entry in on {
-        if regex.is_match(entry) {
+        if RE.is_match(entry) {
             entry
                 .split('=')
                 .filter_map(|part| part.split_once('.'))
                 .for_each(|(label, column)| insert(&mut result, label, column));
         } else {
-            insert(&mut result, "*", entry);
+            insert(&mut result, &default_key, entry);
         }
     }
 

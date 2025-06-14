@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 itertools = "0.14.0"
+once_cell = "1.21.3"
 polars = { version = "0.35", features = ["lazy", "csv", "json", "parquet"] }
 regex = "1.11.1"
 termsize = "0.1"
