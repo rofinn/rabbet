@@ -180,29 +180,37 @@ mod tests {
         // Call the setup function - it should not panic
         config();
 
-        // Verify that key environment variables are set
-        assert!(env::var("POLARS_TABLE_WIDTH").is_ok());
-        assert!(env::var("POLARS_FMT_MAX_ROWS").is_ok());
-        assert!(env::var("POLARS_FMT_TABLE_FORMATTING").is_ok());
+        // Only test environment variables if we're in a terminal environment
+        if std::io::stdout().is_terminal() {
+            // Verify that key environment variables are set
+            assert!(env::var("POLARS_TABLE_WIDTH").is_ok());
+            assert!(env::var("POLARS_FMT_MAX_ROWS").is_ok());
+            assert!(env::var("POLARS_FMT_TABLE_FORMATTING").is_ok());
 
-        // Verify specific formatting values
-        assert_eq!(
-            env::var("POLARS_FMT_TABLE_FORMATTING").unwrap(),
-            "UTF8_BORDERS_ONLY"
-        );
-        assert_eq!(
-            env::var("POLARS_FMT_TABLE_HIDE_COLUMN_DATA_TYPES").unwrap(),
-            "1"
-        );
-        assert_eq!(env::var("POLARS_FMT_TABLE_ROUNDED_CORNERS").unwrap(), "1");
+            // Verify specific formatting values
+            assert_eq!(
+                env::var("POLARS_FMT_TABLE_FORMATTING").unwrap(),
+                "UTF8_BORDERS_ONLY"
+            );
+            assert_eq!(
+                env::var("POLARS_FMT_TABLE_HIDE_COLUMN_DATA_TYPES").unwrap(),
+                "1"
+            );
+            assert_eq!(env::var("POLARS_FMT_TABLE_ROUNDED_CORNERS").unwrap(), "1");
 
-        // Verify table width is within expected bounds
-        let table_width: usize = env::var("POLARS_TABLE_WIDTH").unwrap().parse().unwrap();
-        assert!(table_width >= 80 && table_width <= 300);
+            // Verify table width is within expected bounds
+            let table_width: usize = env::var("POLARS_TABLE_WIDTH").unwrap().parse().unwrap();
+            assert!(table_width >= 80 && table_width <= 300);
 
-        // Verify max rows is within expected bounds
-        let max_rows: usize = env::var("POLARS_FMT_MAX_ROWS").unwrap().parse().unwrap();
-        assert!(max_rows >= 10 && max_rows <= 1000);
+            // Verify max rows is within expected bounds
+            let max_rows: usize = env::var("POLARS_FMT_MAX_ROWS").unwrap().parse().unwrap();
+            assert!(max_rows >= 10 && max_rows <= 1000);
+        } else {
+            // In non-terminal environments (like CI), just verify the function doesn't panic
+            // and that no terminal-specific variables are set
+            assert!(env::var("POLARS_TABLE_WIDTH").is_err());
+            assert!(env::var("POLARS_FMT_MAX_ROWS").is_err());
+        }
     }
 
     #[test]

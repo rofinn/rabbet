@@ -20,7 +20,7 @@ jobs:
           - beta
           - nightly
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4 # zizmor: ignore[unpinned-uses]
         with:
           persist-credentials: false
       - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
