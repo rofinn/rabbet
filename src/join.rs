@@ -1,6 +1,5 @@
 use clap::{Args, ValueEnum};
 use itertools::izip;
-use once_cell::sync::Lazy;
 use polars::prelude::{
     DataFrame, DataFrameJoinOps, JoinArgs as PolarsJoinArgs, JoinType as PolarsJoinType,
 };
@@ -11,8 +10,9 @@ use std::io;
 use crate::io::{read_data, write_data};
 
 #[allow(clippy::expect_used)]
-static RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"\w+\.\w+(=\w+\.\w+)+").expect("Invalid regex pattern"));
+static RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(r"\w+\.\w+(=\w+\.\w+)+").expect("Invalid regex pattern")
+});
 
 #[derive(Debug, Clone, Copy, ValueEnum, PartialEq, Eq)]
 pub enum JoinType {
