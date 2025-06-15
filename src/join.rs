@@ -201,48 +201,99 @@ fn parse_on_strings(on: &[String]) -> HashMap<String, Vec<String>> {
 mod tests {
     use super::*;
     use std::collections::HashMap;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
 
     #[test]
     fn test_create_tables_with_matching_labels() {
-        let labels = vec!["users".to_string(), "orders".to_string()];
-        let tables = vec!["users.csv".to_string(), "orders.csv".to_string()];
-        let on = HashMap::new();
+        // Create temporary CSV files
+        let mut users_file = NamedTempFile::new().unwrap();
+        writeln!(users_file, "id,name,email").unwrap();
+        writeln!(users_file, "1,Alice,alice@example.com").unwrap();
+        writeln!(users_file, "2,Bob,bob@example.com").unwrap();
 
-        // Note: This test would require actual files to exist to run successfully
-        // In a real test environment, we'd need to create temporary test files
+        let mut orders_file = NamedTempFile::new().unwrap();
+        writeln!(orders_file, "id,user_id,product").unwrap();
+        writeln!(orders_file, "101,1,Widget").unwrap();
+        writeln!(orders_file, "102,2,Gadget").unwrap();
+
+        let labels = vec!["users".to_string(), "orders".to_string()];
+        let tables = vec![
+            users_file.path().to_string_lossy().to_string(),
+            orders_file.path().to_string_lossy().to_string(),
+        ];
+
+        // Provide join columns
+        let mut on = HashMap::new();
+        on.insert("*".to_string(), vec!["id".to_string()]);
+
         let result: Vec<Table> = create_tables(&tables, &labels, on).collect();
 
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].name, "users");
         assert_eq!(result[1].name, "orders");
+        assert_eq!(result[0].on, vec!["id"]);
+        assert_eq!(result[1].on, vec!["id"]);
     }
 
     #[test]
     fn test_create_tables_with_empty_labels() {
+        // Create temporary CSV files
+        let mut table1_file = NamedTempFile::new().unwrap();
+        writeln!(table1_file, "id,name").unwrap();
+        writeln!(table1_file, "1,Alpha").unwrap();
+
+        let mut table2_file = NamedTempFile::new().unwrap();
+        writeln!(table2_file, "id,value").unwrap();
+        writeln!(table2_file, "1,100").unwrap();
+
+        let mut table3_file = NamedTempFile::new().unwrap();
+        writeln!(table3_file, "id,status").unwrap();
+        writeln!(table3_file, "1,Active").unwrap();
+
         let labels = vec![];
         let tables = vec![
-            "table1.csv".to_string(),
-            "table2.csv".to_string(),
-            "table3.csv".to_string(),
+            table1_file.path().to_string_lossy().to_string(),
+            table2_file.path().to_string_lossy().to_string(),
+            table3_file.path().to_string_lossy().to_string(),
         ];
-        let on = HashMap::new();
 
-        // Note: This test would require actual files to exist to run successfully
-        // In a real test environment, we'd need to create temporary test files
+        // Provide join columns
+        let mut on = HashMap::new();
+        on.insert("*".to_string(), vec!["id".to_string()]);
+
         let result: Vec<Table> = create_tables(&tables, &labels, on).collect();
 
         assert_eq!(result.len(), 3);
         assert_eq!(result[0].name, "T1");
         assert_eq!(result[1].name, "T2");
         assert_eq!(result[2].name, "T3");
+        assert_eq!(result[0].on, vec!["id"]);
+        assert_eq!(result[1].on, vec!["id"]);
+        assert_eq!(result[2].on, vec!["id"]);
     }
 
     #[test]
     #[should_panic(expected = "Number of names must match number of tables")]
     fn test_create_tables_with_mismatched_lengths() {
+        // Create temporary CSV files
+        let mut users_file = NamedTempFile::new().unwrap();
+        writeln!(users_file, "id,name").unwrap();
+        writeln!(users_file, "1,Alice").unwrap();
+
+        let mut orders_file = NamedTempFile::new().unwrap();
+        writeln!(orders_file, "id,product").unwrap();
+        writeln!(orders_file, "1,Widget").unwrap();
+
         let labels = vec!["users".to_string()];
-        let tables = vec!["users.csv".to_string(), "orders.csv".to_string()];
-        let on = HashMap::new();
+        let tables = vec![
+            users_file.path().to_string_lossy().to_string(),
+            orders_file.path().to_string_lossy().to_string(),
+        ];
+
+        // Provide join columns
+        let mut on = HashMap::new();
+        on.insert("*".to_string(), vec!["id".to_string()]);
 
         let _result: Vec<Table> = create_tables(&tables, &labels, on).collect();
     }
@@ -259,5 +310,76 @@ mod tests {
         assert_eq!(result["T1"], vec!["col11", "col21"]);
         assert_eq!(result["T2"], vec!["col12", "col22"]);
         assert_eq!(result["T3"], vec!["col13", "col23"]);
+    }
+
+    #[test]
+    fn test_join_args_validate_success() {
+        let args = JoinArgs {
+            tables: vec!["table1.csv".to_string(), "table2.csv".to_string()],
+            r#as: vec!["T1".to_string(), "T2".to_string()],
+            on: vec!["id".to_string()],
+            r#type: JoinType::Inner,
+            fmt: OutputFormat::Default,
+            delimiter: ',',
+        };
+
+        assert!(args.validate().is_ok());
+    }
+
+    #[test]
+    fn test_join_args_validate_too_few_tables() {
+        let args = JoinArgs {
+            tables: vec!["table1.csv".to_string()],
+            r#as: vec![],
+            on: vec!["id".to_string()],
+            r#type: JoinType::Inner,
+            fmt: OutputFormat::Default,
+            delimiter: ',',
+        };
+
+        let result = args.validate();
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "At least two tables are required for joining"
+        );
+    }
+
+    #[test]
+    fn test_join_args_validate_mismatched_table_names() {
+        let args = JoinArgs {
+            tables: vec!["table1.csv".to_string(), "table2.csv".to_string()],
+            r#as: vec!["T1".to_string()], // Only one name for two tables
+            on: vec!["id".to_string()],
+            r#type: JoinType::Inner,
+            fmt: OutputFormat::Default,
+            delimiter: ',',
+        };
+
+        let result = args.validate();
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "Number of table names must match number of tables"
+        );
+    }
+
+    #[test]
+    fn test_join_args_validate_no_join_columns() {
+        let args = JoinArgs {
+            tables: vec!["table1.csv".to_string(), "table2.csv".to_string()],
+            r#as: vec![],
+            on: vec![], // No join columns specified
+            r#type: JoinType::Inner,
+            fmt: OutputFormat::Default,
+            delimiter: ',',
+        };
+
+        let result = args.validate();
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "At least one column to join on is required"
+        );
     }
 }
