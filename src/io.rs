@@ -56,8 +56,8 @@ use termsize;
 /// - Various formatting options for clean, readable output
 pub fn config() {
     fn set_var(key: &str, default: &str) {
-        unsafe {
-            if env::var(key).is_err() {
+        if env::var(key).is_err() {
+            unsafe {
                 env::set_var(key, default);
             }
         }
@@ -242,16 +242,17 @@ mod tests {
     }
 
     #[test]
-    fn test_read_data_from_cursor() {
-        // Test reading from a string buffer (simulating stdin)
-        let csv_data = "name,age,city\nAlice,30,New York\nBob,25,Los Angeles";
-        let cursor = Cursor::new(csv_data);
+    fn test_read_data_with_semicolon_separator() {
+        // Create a temporary CSV file with semicolon separator
+        let mut temp_file = NamedTempFile::new().unwrap();
+        writeln!(temp_file, "name;age;city").unwrap();
+        writeln!(temp_file, "Alice;30;New York").unwrap();
+        writeln!(temp_file, "Bob;25;Los Angeles").unwrap();
 
-        let df = CsvReader::new(cursor)
-            .with_separator(b',')
-            .has_header(true)
-            .finish()
-            .unwrap();
+        let file_path = temp_file.path().to_string_lossy().to_string();
+
+        // Test reading with semicolon separator
+        let df = read_data(&file_path, Some(';')).unwrap();
 
         assert_eq!(df.shape().0, 2); // 2 rows
         assert_eq!(df.shape().1, 3); // 3 columns
@@ -259,25 +260,61 @@ mod tests {
     }
 
     #[test]
-    fn test_read_data_from_stdin_string() {
-        // Test the stdin path using "-" as source
-        // Note: This test can't actually test stdin input in unit tests,
-        // but we can test that the function handles the "-" source correctly
-        // by checking that it doesn't panic and follows the stdin code path
-
-        // Create a temporary file to simulate what would come from stdin
+    fn test_read_data_empty_file() {
+        // Test reading from an empty file with only headers
         let mut temp_file = NamedTempFile::new().unwrap();
-        writeln!(temp_file, "id,value").unwrap();
-        writeln!(temp_file, "1,test").unwrap();
-        writeln!(temp_file, "2,data").unwrap();
+        writeln!(temp_file, "id,name,score").unwrap();
 
         let file_path = temp_file.path().to_string_lossy().to_string();
 
-        // Test that non-stdin files work with the current implementation
         let df = read_data(&file_path, None).unwrap();
 
-        assert_eq!(df.shape().0, 2); // 2 rows
-        assert_eq!(df.shape().1, 2); // 2 columns
-        assert_eq!(df.get_column_names(), &["id", "value"]);
+        assert_eq!(df.shape().0, 0); // 0 rows
+        assert_eq!(df.shape().1, 3); // 3 columns
+        assert_eq!(df.get_column_names(), &["id", "name", "score"]);
+    }
+
+    #[test]
+    fn test_write_data() {
+        // Create a small test DataFrame
+        let df = df! {
+            "name" => ["Alice", "Bob"],
+            "age" => [30, 25],
+            "city" => ["New York", "Los Angeles"]
+        }
+        .unwrap();
+
+        // Write DataFrame as CSV to a buffer to test the CSV output functionality
+        let mut buffer = Vec::new();
+        {
+            use polars::prelude::CsvWriter;
+            let mut df_clone = df.clone();
+            CsvWriter::new(&mut buffer)
+                .with_separator(b',')
+                .finish(&mut df_clone)
+                .unwrap();
+        }
+
+        // Verify the CSV output contains expected data
+        let output = String::from_utf8(buffer).unwrap();
+        assert!(output.contains("name,age,city"));
+        assert!(output.contains("Alice,30,New York"));
+        assert!(output.contains("Bob,25,Los Angeles"));
+    }
+
+    #[test]
+    fn test_read_data_file_not_found() {
+        // Test reading from a non-existent file
+        let non_existent_path = "/path/that/does/not/exist.csv";
+
+        let result = read_data(non_existent_path, None);
+
+        // Should return an error
+        assert!(result.is_err());
+
+        // Verify it's a file not found error
+        let error = result.unwrap_err();
+        let error_string = error.to_string().to_lowercase();
+        assert!(error_string.contains("no such file") || error_string.contains("not found"));
     }
 }
