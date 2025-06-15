@@ -10,8 +10,22 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  format_and_lint:
+    name: Format and Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # zizmor: ignore[unpinned-uses]
+        with:
+          persist-credentials: false
+      - run: rustup update stable && rustup default stable
+      - run: rustup component add rustfmt clippy
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
   build_and_test:
-    name: Rust project - latest
+    name: Build and Test
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -24,5 +38,7 @@ jobs:
         with:
           persist-credentials: false
       - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
-      - run: cargo build --verbose
-      - run: cargo test --verbose
+      - name: Build
+        run: cargo build --verbose
+      - name: Test
+        run: cargo test --verbose

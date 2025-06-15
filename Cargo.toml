@@ -14,6 +14,21 @@ termsize = { version = "0.1", default-features = false }
 [dev-dependencies]
 tempfile = "3.0"
 
+[lints.clippy]
+# Deny common clippy lints that catch potential bugs or poor practices
+nursery = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+todo = "warn"
+unimplemented = "warn"
+unreachable = "warn"
+# Allow some pedantic lints that can be too noisy
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+
 [profile.release]
 opt-level = "z"
 codegen-units = 1

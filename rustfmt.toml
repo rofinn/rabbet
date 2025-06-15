@@ -1,0 +1,15 @@
+# Rustfmt configuration for rabbet (stable features only)
+edition = "2021"
+hard_tabs = false
+tab_spaces = 4
+max_width = 92
+use_small_heuristics = "Default"
+# wrap_comments = true
+newline_style = "Unix"
+remove_nested_parens = true
+use_field_init_shorthand = true
+force_explicit_abi = true
+# group_imports = "StdExternalCrate"
+# imports_granularity = "Item"
+fn_params_layout = "Tall"
+# format_code_in_doc_comments = true

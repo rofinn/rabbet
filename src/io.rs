@@ -2,11 +2,10 @@ use polars::prelude::*;
 use std::env;
 use std::fs::File;
 use std::io::{self, Cursor, IsTerminal, Read, Write};
-use termsize;
 
 /// # IO Module
 ///
-/// This module provides functionality to read CSV data into Polars DataFrames
+/// This module provides functionality to read CSV data into Polars `DataFrames`
 /// from various sources including files and stdin.
 ///
 /// ## Usage Examples
@@ -37,7 +36,6 @@ use termsize;
 ///     Some(';')
 /// )?;
 /// ```
-
 /// Sets up Polars table formatting environment variables based on terminal size
 ///
 /// This function detects the current terminal dimensions and configures Polars
@@ -73,19 +71,19 @@ pub fn config() {
 
         if let Some(size) = termsize::get() {
             // Calculate optimal dimensions based on terminal size
-            let table_width = (size.cols as usize).max(80).min(300);
-            let max_rows = (size.rows as usize).saturating_sub(5).max(10).min(1000);
+            let table_width = (size.cols as usize).clamp(80, 300);
+            let max_rows = (size.rows as usize).saturating_sub(5).clamp(10, 1000);
             set_var("POLARS_TABLE_WIDTH", &table_width.to_string());
             set_var("POLARS_FMT_MAX_ROWS", &max_rows.to_string());
         } else {
             // Fallback to conservative defaults when terminal size is unavailable
             set_var("POLARS_TABLE_WIDTH", "120");
-            set_var("POLARS_FMT_MAX_ROWS", "25")
+            set_var("POLARS_FMT_MAX_ROWS", "25");
         }
     }
 }
 
-/// Reads CSV data into a Polars DataFrame from either a file or stdin
+/// Reads CSV data into a Polars `DataFrame` from either a file or stdin
 ///
 /// # Arguments
 ///
@@ -94,7 +92,7 @@ pub fn config() {
 ///
 /// # Returns
 ///
-/// * `Result<DataFrame, Box<dyn std::error::Error>>` - The resulting DataFrame or an error
+/// * `Result<DataFrame, Box<dyn std::error::Error>>` - The resulting `DataFrame` or an error
 ///
 /// # Examples
 ///
@@ -130,11 +128,11 @@ pub fn read_data(
     Ok(df)
 }
 
-/// Writes a Polars DataFrame to stdout as CSV format
+/// Writes a Polars `DataFrame` to stdout as CSV format
 ///
 /// # Arguments
 ///
-/// * `df` - The DataFrame to write to stdout
+/// * `df` - The `DataFrame` to write to stdout
 ///
 /// # Returns
 ///
@@ -155,7 +153,7 @@ pub fn read_data(
 pub fn write_data(mut df: DataFrame) -> Result<(), Box<dyn std::error::Error>> {
     // Print final result
     if std::io::stdout().is_terminal() {
-        println!("{:?}", df);
+        println!("{df:?}");
     } else {
         let mut buffer = Vec::new();
         CsvWriter::new(&mut buffer)
@@ -176,6 +174,7 @@ mod tests {
     use tempfile::NamedTempFile;
 
     #[test]
+    #[allow(clippy::expect_used)]
     fn test_config() {
         // Call the setup function - it should not panic
         config();
@@ -189,22 +188,34 @@ mod tests {
 
             // Verify specific formatting values
             assert_eq!(
-                env::var("POLARS_FMT_TABLE_FORMATTING").unwrap(),
+                env::var("POLARS_FMT_TABLE_FORMATTING")
+                    .expect("POLARS_FMT_TABLE_FORMATTING should be set"),
                 "UTF8_BORDERS_ONLY"
             );
             assert_eq!(
-                env::var("POLARS_FMT_TABLE_HIDE_COLUMN_DATA_TYPES").unwrap(),
+                env::var("POLARS_FMT_TABLE_HIDE_COLUMN_DATA_TYPES")
+                    .expect("POLARS_FMT_TABLE_HIDE_COLUMN_DATA_TYPES should be set"),
                 "1"
             );
-            assert_eq!(env::var("POLARS_FMT_TABLE_ROUNDED_CORNERS").unwrap(), "1");
+            assert_eq!(
+                env::var("POLARS_FMT_TABLE_ROUNDED_CORNERS")
+                    .expect("POLARS_FMT_TABLE_ROUNDED_CORNERS should be set"),
+                "1"
+            );
 
             // Verify table width is within expected bounds
-            let table_width: usize = env::var("POLARS_TABLE_WIDTH").unwrap().parse().unwrap();
-            assert!(table_width >= 80 && table_width <= 300);
+            let table_width: usize = env::var("POLARS_TABLE_WIDTH")
+                .expect("POLARS_TABLE_WIDTH should be set")
+                .parse()
+                .expect("POLARS_TABLE_WIDTH should be a valid number");
+            assert!((80..=300).contains(&table_width));
 
             // Verify max rows is within expected bounds
-            let max_rows: usize = env::var("POLARS_FMT_MAX_ROWS").unwrap().parse().unwrap();
-            assert!(max_rows >= 10 && max_rows <= 1000);
+            let max_rows: usize = env::var("POLARS_FMT_MAX_ROWS")
+                .expect("POLARS_FMT_MAX_ROWS should be set")
+                .parse()
+                .expect("POLARS_FMT_MAX_ROWS should be a valid number");
+            assert!((10..=1000).contains(&max_rows));
         } else {
             // In non-terminal environments (like CI), just verify the function doesn't panic
             // and that no terminal-specific variables are set
@@ -214,6 +225,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::unwrap_used, clippy::expect_used)]
     fn test_read_data_from_file_comma_separated() {
         // Create a temporary CSV file
         let mut temp_file = NamedTempFile::new().unwrap();
@@ -224,7 +236,7 @@ mod tests {
         let file_path = temp_file.path().to_string_lossy().to_string();
 
         // Test reading with default comma separator
-        let df = read_data(&file_path, None).unwrap();
+        let df = read_data(&file_path, None).expect("Failed to read data");
 
         assert_eq!(df.shape().0, 2); // 2 rows
         assert_eq!(df.shape().1, 3); // 3 columns
@@ -232,6 +244,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::unwrap_used, clippy::expect_used)]
     fn test_read_data_from_file_tab_separated() {
         // Create a temporary TSV file
         let mut temp_file = NamedTempFile::new().unwrap();
@@ -242,7 +255,7 @@ mod tests {
         let file_path = temp_file.path().to_string_lossy().to_string();
 
         // Test reading with tab separator
-        let df = read_data(&file_path, Some('\t')).unwrap();
+        let df = read_data(&file_path, Some('\t')).expect("Failed to read data");
 
         assert_eq!(df.shape().0, 2); // 2 rows
         assert_eq!(df.shape().1, 3); // 3 columns
@@ -250,6 +263,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::unwrap_used, clippy::expect_used)]
     fn test_read_data_with_semicolon_separator() {
         // Create a temporary CSV file with semicolon separator
         let mut temp_file = NamedTempFile::new().unwrap();
@@ -260,7 +274,7 @@ mod tests {
         let file_path = temp_file.path().to_string_lossy().to_string();
 
         // Test reading with semicolon separator
-        let df = read_data(&file_path, Some(';')).unwrap();
+        let df = read_data(&file_path, Some(';')).expect("Failed to read data");
 
         assert_eq!(df.shape().0, 2); // 2 rows
         assert_eq!(df.shape().1, 3); // 3 columns
@@ -268,6 +282,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::unwrap_used, clippy::expect_used)]
     fn test_read_data_empty_file() {
         // Test reading from an empty file with only headers
         let mut temp_file = NamedTempFile::new().unwrap();
@@ -275,7 +290,7 @@ mod tests {
 
         let file_path = temp_file.path().to_string_lossy().to_string();
 
-        let df = read_data(&file_path, None).unwrap();
+        let df = read_data(&file_path, None).expect("Failed to read data");
 
         assert_eq!(df.shape().0, 0); // 0 rows
         assert_eq!(df.shape().1, 3); // 3 columns
@@ -283,34 +298,35 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::unwrap_used, clippy::expect_used)]
     fn test_write_data() {
         // Create a small test DataFrame
-        let df = df! {
+        let mut df = df! {
             "name" => ["Alice", "Bob"],
             "age" => [30, 25],
             "city" => ["New York", "Los Angeles"]
         }
-        .unwrap();
+        .expect("Failed to create DataFrame");
 
         // Write DataFrame as CSV to a buffer to test the CSV output functionality
         let mut buffer = Vec::new();
         {
             use polars::prelude::CsvWriter;
-            let mut df_clone = df.clone();
             CsvWriter::new(&mut buffer)
                 .with_separator(b',')
-                .finish(&mut df_clone)
-                .unwrap();
+                .finish(&mut df)
+                .expect("Failed to write CSV");
         }
 
         // Verify the CSV output contains expected data
-        let output = String::from_utf8(buffer).unwrap();
+        let output = String::from_utf8(buffer).expect("Failed to convert buffer to string");
         assert!(output.contains("name,age,city"));
         assert!(output.contains("Alice,30,New York"));
         assert!(output.contains("Bob,25,Los Angeles"));
     }
 
     #[test]
+    #[allow(clippy::unwrap_used)]
     fn test_read_data_file_not_found() {
         // Test reading from a non-existent file
         let non_existent_path = "/path/that/does/not/exist.csv";
@@ -323,6 +339,8 @@ mod tests {
         // Verify it's a file not found error
         let error = result.unwrap_err();
         let error_string = error.to_string().to_lowercase();
-        assert!(error_string.contains("no such file") || error_string.contains("not found"));
+        assert!(
+            error_string.contains("no such file") || error_string.contains("not found")
+        );
     }
 }

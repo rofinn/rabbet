@@ -10,7 +10,9 @@ use std::io;
 
 use crate::io::{read_data, write_data};
 
-static RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\w+\.\w+(=\w+\.\w+)+").unwrap());
+#[allow(clippy::expect_used)]
+static RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"\w+\.\w+(=\w+\.\w+)+").expect("Invalid regex pattern"));
 
 #[derive(Debug, Clone, Copy, ValueEnum, PartialEq, Eq)]
 pub enum JoinType {
@@ -83,10 +85,11 @@ impl JoinArgs {
     pub fn execute(&self) -> Result<(), Box<dyn std::error::Error>> {
         let on_map = parse_on_strings(&self.on);
         let mut tables = create_tables(&self.tables, &self.r#as, on_map);
-        let mut result = tables.next().unwrap();
+        #[allow(clippy::expect_used)]
+        let mut result = tables.next().expect("No tables found");
 
         for table in tables {
-            result = result.join(&table, self.r#type)
+            result = result.join(&table, self.r#type);
         }
 
         write_data(result.df)?;
@@ -102,14 +105,16 @@ struct Table {
 }
 
 impl Table {
-    fn load(path: &str, name: &str, on: &[String]) -> Table {
-        Table {
-            df: read_data(&path, Some(',')).unwrap(),
+    #[allow(clippy::expect_used)]
+    fn load(path: &str, name: &str, on: &[String]) -> Self {
+        Self {
+            df: read_data(path, Some(',')).expect("Failed to read data"),
             name: name.to_string(),
             on: on.to_vec(),
         }
     }
-    fn join(&self, other: &Table, method: JoinType) -> Table {
+    #[allow(clippy::expect_used)]
+    fn join(&self, other: &Self, method: JoinType) -> Self {
         let result = match method {
             JoinType::Inner => self.df.join(
                 &other.df,
@@ -137,7 +142,7 @@ impl Table {
             ),
         };
 
-        Table {
+        Self {
             df: result.expect("Failed to join tables"),
             name: self.name.clone(),
             on: self.on.clone(),
@@ -155,12 +160,13 @@ fn create_tables(
         "Number of names must match number of tables"
     );
 
-    let labels = match names.is_empty() {
-        true => (0..paths.len()).map(|i| format!("T{}", i + 1)).collect(),
-        false => names.to_vec(),
+    let labels = if names.is_empty() {
+        (0..paths.len()).map(|i| format!("T{}", i + 1)).collect()
+    } else {
+        names.to_vec()
     };
 
-    let global_cols = on.get(&"*".to_string()).cloned().unwrap_or_default();
+    let global_cols = on.get("*").cloned().unwrap_or_default();
 
     izip!(paths, labels).map(move |(p, l)| {
         let mut on_cols = global_cols.clone();
@@ -179,7 +185,7 @@ fn parse_on_strings(on: &[String]) -> HashMap<String, Vec<String>> {
     let insert = |result: &mut HashMap<String, Vec<String>>, label: &str, column: &str| {
         result
             .entry(label.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(column.to_string());
     };
 
@@ -205,6 +211,7 @@ mod tests {
     use tempfile::NamedTempFile;
 
     #[test]
+    #[allow(clippy::unwrap_used)]
     fn test_create_tables_with_matching_labels() {
         // Create temporary CSV files
         let mut users_file = NamedTempFile::new().unwrap();
@@ -237,6 +244,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::unwrap_used)]
     fn test_create_tables_with_empty_labels() {
         // Create temporary CSV files
         let mut table1_file = NamedTempFile::new().unwrap();
@@ -275,6 +283,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Number of names must match number of tables")]
+    #[allow(clippy::unwrap_used)]
     fn test_create_tables_with_mismatched_lengths() {
         // Create temporary CSV files
         let mut users_file = NamedTempFile::new().unwrap();
@@ -327,6 +336,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::unwrap_used)]
     fn test_join_args_validate_too_few_tables() {
         let args = JoinArgs {
             tables: vec!["table1.csv".to_string()],
@@ -346,6 +356,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::unwrap_used)]
     fn test_join_args_validate_mismatched_table_names() {
         let args = JoinArgs {
             tables: vec!["table1.csv".to_string(), "table2.csv".to_string()],
@@ -365,6 +376,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::unwrap_used)]
     fn test_join_args_validate_no_join_columns() {
         let args = JoinArgs {
             tables: vec!["table1.csv".to_string(), "table2.csv".to_string()],
