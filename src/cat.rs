@@ -4,17 +4,13 @@ use std::io;
 use crate::io::{read_data, write_data};
 
 #[derive(Args, Debug)]
-pub struct TailArgs {
+pub struct CatArgs {
     /// Input table (file or '-' for stdin)
     #[arg(required = true)]
     pub table: String,
-
-    /// Number of lines to display from the end
-    #[arg(short, long, default_value = "5")]
-    pub n: usize,
 }
 
-impl TailArgs {
+impl CatArgs {
     #[allow(clippy::unused_self)]
     #[allow(clippy::unnecessary_wraps)]
     pub const fn validate(&self) -> io::Result<()> {
@@ -23,12 +19,9 @@ impl TailArgs {
 
     #[allow(clippy::expect_used)]
     pub fn execute(&self) -> Result<(), Box<dyn std::error::Error>> {
-        // TODO: Update read_data to use a circular buffer for better performance
-        let data = read_data(self.table.as_str(), Some(',')).expect("Failed to read data");
-
-        let tail_data = data.tail(Some(self.n));
-
-        write_data(tail_data)?;
+        write_data(
+            read_data(self.table.as_str(), Some(',')).expect("Failed to read data"),
+        )?;
 
         Ok(())
     }
@@ -40,9 +33,8 @@ mod tests {
 
     #[test]
     fn test_validate_always_succeeds() {
-        let args = TailArgs {
+        let args = CatArgs {
             table: "test.csv".to_string(),
-            n: 5,
         };
         assert!(args.validate().is_ok());
     }
@@ -50,20 +42,18 @@ mod tests {
     #[test]
     #[should_panic(expected = "Failed to read data")]
     #[allow(clippy::unwrap_used)]
-    fn test_tail_nonexistent_file_panics() {
-        let args = TailArgs {
+    fn test_cat_nonexistent_file_panics() {
+        let args = CatArgs {
             table: "nonexistent_file.csv".to_string(),
-            n: 5,
         };
 
         args.execute().unwrap();
     }
 
     #[test]
-    fn test_tail_basic_csv() {
-        let args = TailArgs {
+    fn test_cat_basic_csv() {
+        let args = CatArgs {
             table: "tests/data/basic/orders.csv".to_string(),
-            n: 2,
         };
 
         assert!(args.validate().is_ok());
