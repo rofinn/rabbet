@@ -23,7 +23,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable # zizmor: ignore[unpinned-uses]
         with:
           components: rustfmt, clippy, llvm-tools-preview
-      - uses: taiki-e/install-action@v2 # zizmor: ignore[unpinned-uses]
+      - uses: taiki-e/install-action@v2 # zizmor: ignore[ref-confusion, unpinned-uses]
         with:
           tool: cargo-llvm-cov, cargo-nextest
       - uses: Swatinem/rust-cache@v2 # zizmor: ignore[unpinned-uses]
