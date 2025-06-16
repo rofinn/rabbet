@@ -2,43 +2,45 @@ name: CI
 
 on:
   push:
+    branches: ["main"]
   pull_request:
+    branches: ["**"]
 
 permissions: {}
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_TEST_DEBUG: 0
 
 jobs:
-  format_and_lint:
-    name: Format and Lint
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4 # zizmor: ignore[unpinned-uses]
         with:
           persist-credentials: false
-      - run: rustup update stable && rustup default stable
-      - run: rustup component add rustfmt clippy
-      - name: Check formatting
+      - uses: dtolnay/rust-toolchain@stable # zizmor: ignore[unpinned-uses]
+        with:
+          components: rustfmt, clippy, llvm-tools-preview
+      - uses: taiki-e/install-action@v2 # zizmor: ignore[ref-confusion, unpinned-uses]
+        with:
+          tool: cargo-llvm-cov, cargo-nextest
+      - uses: Swatinem/rust-cache@v2 # zizmor: ignore[unpinned-uses]
+      - name: Compile
+        run: cargo check --locked
+      - name: Format
         run: cargo fmt --all -- --check
-      - name: Run clippy
+      - name: Lint
         run: cargo clippy --all-targets --all-features -- -D warnings
-
-  build_and_test:
-    name: Build and Test
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        toolchain:
-          - stable
-          - beta
-          - nightly
-    steps:
-      - uses: actions/checkout@v4 # zizmor: ignore[unpinned-uses]
-        with:
-          persist-credentials: false
-      - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
       - name: Build
-        run: cargo build --verbose
+        run: cargo build --locked
       - name: Test
-        run: cargo test --verbose
+        run: |
+          cargo llvm-cov --no-report nextest
+          cargo llvm-cov report --lcov --output-path lcov.info
+      - name: Coverage
+        uses: codecov/codecov-action@v5 # zizmor: ignore[unpinned-uses]
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: lcov.info

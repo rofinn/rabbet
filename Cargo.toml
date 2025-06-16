@@ -7,7 +7,11 @@ edition = "2024"
 [dependencies]
 clap = { version = "4", default-features = false, features = ["std", "derive"] }
 itertools = { version = "0.14.0", default-features = false }
-polars = { version = "0.35", default-features = false, features = ["csv"] }
+polars = { version = "0.48", default-features = false, features = [
+    "csv",
+    "lazy",
+    "polars-ops",
+] }
 regex = { version = "1.11.1", default-features = false, features = ["std"] }
 termsize = { version = "0.1", default-features = false }
 

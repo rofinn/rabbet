@@ -120,9 +120,11 @@ pub fn read_data(
         _ => File::open(source)?.read_to_string(&mut buffer)?,
     };
 
-    let df = CsvReader::new(Cursor::new(buffer))
-        .with_separator(sep)
-        .has_header(true)
+    let parse_options = CsvParseOptions::default().with_separator(sep);
+    let df = CsvReadOptions::default()
+        .with_parse_options(parse_options)
+        .with_has_header(true)
+        .into_reader_with_file_handle(Cursor::new(buffer))
         .finish()?;
 
     Ok(df)
