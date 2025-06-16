@@ -1,8 +1,11 @@
 use clap::Parser;
 
 mod args;
+mod cat;
+mod head;
 mod io;
 mod join;
+mod tail;
 
 use args::Args;
 use io::config;
