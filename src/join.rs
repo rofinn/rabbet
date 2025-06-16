@@ -121,24 +121,28 @@ impl Table {
                 &self.on,
                 &other.on,
                 PolarsJoinArgs::new(PolarsJoinType::Inner),
+                None,
             ),
             JoinType::Left => self.df.join(
                 &other.df,
                 &self.on,
                 &other.on,
                 PolarsJoinArgs::new(PolarsJoinType::Left),
+                None,
             ),
             JoinType::Right => other.df.join(
                 &self.df,
                 &other.on,
                 &self.on,
                 PolarsJoinArgs::new(PolarsJoinType::Left),
+                None,
             ),
             JoinType::Outer => self.df.join(
                 &other.df,
                 &self.on,
                 &other.on,
-                PolarsJoinArgs::new(PolarsJoinType::Outer),
+                PolarsJoinArgs::new(PolarsJoinType::Full),
+                None,
             ),
         };
 
