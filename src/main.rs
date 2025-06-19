@@ -5,6 +5,7 @@ mod cat;
 mod head;
 mod io;
 mod join;
+mod query;
 mod tail;
 
 use args::Args;

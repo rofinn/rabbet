@@ -3,6 +3,7 @@ use clap::Parser;
 use crate::cat::CatArgs;
 use crate::head::HeadArgs;
 use crate::join::JoinArgs;
+use crate::query::QueryArgs;
 use crate::tail::TailArgs;
 
 #[derive(Parser, Debug)]
@@ -23,6 +24,9 @@ pub enum Commands {
     /// Join
     Join(JoinArgs),
 
+    /// Query
+    Query(QueryArgs),
+
     /// Tail
     Tail(TailArgs),
 }
@@ -41,6 +45,10 @@ impl Args {
             Commands::Head(head_args) => {
                 head_args.validate()?;
                 head_args.execute()?;
+            }
+            Commands::Query(query_args) => {
+                query_args.validate()?;
+                query_args.execute()?;
             }
             Commands::Tail(tail_args) => {
                 tail_args.validate()?;

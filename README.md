@@ -32,6 +32,14 @@ Join two CSV files on matching columns:
 │ CUSTOMER-004   Emily Davis       emily.davis@exam…   555-2468         321 Pine St        Anytown         CA               90210              USA                ORDER-004   PRODUCT-002   4          40.0    2022-01-04 │
 │ CUSTOMER-005   Robert Brown      robert.brown@exa…   555-3698         654 Maple St       Anytown         CA               90210              USA                ORDER-005   PRODUCT-001   5          50.0    2022-01-05 │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+> rabbet query --as orders tests/data/basic/orders.csv "SELECT * FROM orders WHERE product_id = 'PRODUCT-005'"
+╭────────────────────────────────────────────────────────────────────────╮
+│ order_id    customer_id    product_id    quantity   price   order_date │
+╞════════════════════════════════════════════════════════════════════════╡
+│ ORDER-001   CUSTOMER-003   PRODUCT-005   1          10.0    2022-01-01 │
+│ ORDER-002   CUSTOMER-003   PRODUCT-005   2          20.0    2022-01-02 │
+╰────────────────────────────────────────────────────────────────────────╯
 ```
 
 This performs an inner join between `tests/data/basic/customers.csv` and `tests/data/basic/orders.csv` on the `customer_id`.
