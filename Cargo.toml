@@ -12,6 +12,7 @@ polars = { version = "0.48", default-features = false, features = [
     "fmt",
     "lazy",
     "polars-ops",
+    "sql",
 ] }
 regex = { version = "1.11.1", default-features = false, features = ["std"] }
 termsize = { version = "0.1", default-features = false }
