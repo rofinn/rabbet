@@ -1,12 +1,13 @@
 # Rabbet
+
 [![CI](https://github.com/rofinn/rabbet/workflows/CI/badge.svg)](https://github.com/rofinn/rabbet/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/rofinn/rabbet/branch/main/graph/badge.svg)](https://codecov.io/gh/rofinn/rabbet)
+
+CLI to simplify shell scripts and glue code operating on relational data.
 
 <p align="center">
     <img src="./docs/rabbet.svg" alt="Rabbet Joint Diagram" width="400" />
 </p>
-
-Simple user-friendly joins on the command line.
 
 ## Installation
 
