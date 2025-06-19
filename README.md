@@ -14,7 +14,7 @@ CLI to simplify shell scripts and glue code operating on relational data.
 ### From Source
 
 ```sh
-> cargo install --path https://github.com/rofinn/rabbet.git
+> cargo install --git https://github.com/rofinn/rabbet.git
 ```
 
 ## Quick Start
