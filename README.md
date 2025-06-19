@@ -1,4 +1,6 @@
 # Rabbet
+[![CI](https://github.com/rofinn/rabbet/workflows/CI/badge.svg)](https://github.com/rofinn/rabbet/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/rofinn/rabbet/branch/main/graph/badge.svg)](https://codecov.io/gh/rofinn/rabbet)
 
 <p align="center">
     <img src="./docs/rabbet.svg" alt="Rabbet Joint Diagram" width="400" />
@@ -10,10 +12,8 @@ Simple user-friendly joins on the command line.
 
 ### From Source
 
-```bash
-git clone https://github.com/rofinn/rabbet.git
-cd rabbet
-cargo install --path .
+```sh
+> cargo install --path https://github.com/rofinn/rabbet.git
 ```
 
 ## Quick Start
@@ -21,251 +21,47 @@ cargo install --path .
 Join two CSV files on matching columns:
 
 ```bash
-rabbet tests/data/customers.csv tests/data/orders.csv --on id,customer_id
+> rabbet join tests/data/basic/customers.csv tests/data/basic/orders.csv --on customer_id
+╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ customer_id    customer_name     customer_email      customer_phone   customer_address   customer_city   customer_state   customer_zipcode   customer_country   order_id    product_id    quantity   price   order_date │
+╞═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╡
+│ CUSTOMER-003   Michael Johnson   michael.johnson@…   555-9876         789 Oak St         Anytown         CA               90210              USA                ORDER-001   PRODUCT-005   1          10.0    2022-01-01 │
+│ CUSTOMER-003   Michael Johnson   michael.johnson@…   555-9876         789 Oak St         Anytown         CA               90210              USA                ORDER-002   PRODUCT-005   2          20.0    2022-01-02 │
+│ CUSTOMER-003   Michael Johnson   michael.johnson@…   555-9876         789 Oak St         Anytown         CA               90210              USA                ORDER-003   PRODUCT-003   3          30.0    2022-01-03 │
+│ CUSTOMER-004   Emily Davis       emily.davis@exam…   555-2468         321 Pine St        Anytown         CA               90210              USA                ORDER-004   PRODUCT-002   4          40.0    2022-01-04 │
+│ CUSTOMER-005   Robert Brown      robert.brown@exa…   555-3698         654 Maple St       Anytown         CA               90210              USA                ORDER-005   PRODUCT-001   5          50.0    2022-01-05 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-This performs an inner join between `tests/data/customers.csv` and `tests/data/orders.csv` where the `id` column in the first table matches the `customer_id` column in the second table.
-
-Expected output (formatted as a markdown table):
-```
-| id | name | email | city | region | country | join_date | order_id | amount | status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | John Smith | john.smith@example.com | New York | NY | USA | 2023-01-15 | ORD-001 | 125.99 | Delivered |
-| 1 | John Smith | john.smith@example.com | New York | NY | USA | 2023-01-15 | ORD-003 | 45.25 | Delivered |
-| 2 | Emma Johnson | emma.j@example.com | London | England | UK | 2023-02-20 | ORD-002 | 89.50 | Delivered |
-| 3 | Miguel Santos | miguel.s@example.com | Madrid | Madrid | Spain | 2023-03-10 | ORD-004 | 220.00 | Shipped |
-```
-
-Expected output (in markdown table format):
-```
-| id | name | email | order_id | customer_id | amount |
-| --- | --- | --- | --- | --- | --- |
-| 1 | John Smith | john@example.com | 101 | 1 | 125.99 |
-| 1 | John Smith | john@example.com | 103 | 1 | 45.25 |
-| 2 | Jane Doe | jane@example.com | 102 | 2 | 89.50 |
-```
-
-## Usage Examples
-
-### Basic Inner Join
-
-```bash
-rabbet /path/to/customers.csv /path/to/orders.csv --on id,customer_id
-```
-
-Expected output (markdown table format):
-```
-| id | name | email | order_id | customer_id | amount |
-| --- | --- | --- | --- | --- | --- |
-| 1 | John Smith | john@example.com | 101 | 1 | 125.99 |
-| 1 | John Smith | john@example.com | 103 | 1 | 45.25 |
-| 2 | Jane Doe | jane@example.com | 102 | 2 | 89.50 |
-```
-
-### Left Join
-
-Include all rows from the left table, even without matches:
-
-```bash
-rabbet /path/to/customers.csv /path/to/orders.csv --on id,customer_id --type left
-```
-
-Expected output (markdown table format):
-```
-| id | name | email | order_id | customer_id | amount |
-| --- | --- | --- | --- | --- | --- |
-| 1 | John Smith | john@example.com | 101 | 1 | 125.99 |
-| 1 | John Smith | john@example.com | 103 | 1 | 45.25 |
-| 2 | Jane Doe | jane@example.com | 102 | 2 | 89.50 |
-| 3 | Robert Jones | robert@example.com |  |  |  |
-```
-
-### Output as CSV
-
-```bash
-rabbet /path/to/customers.csv /path/to/orders.csv --on id,customer_id --fmt csv > /path/to/joined.csv
-```
-
-Contents of `/path/to/joined.csv`:
-```
-id,name,email,order_id,customer_id,amount
-1,John Smith,john@example.com,101,1,125.99
-1,John Smith,john@example.com,103,1,45.25
-2,Jane Doe,jane@example.com,102,2,89.50
-```
-
-### Reading from stdin
-
-You can use `-` to read from stdin:
-
-```bash
-cat /path/to/customers.csv | rabbet - /path/to/orders.csv --on id,customer_id
-```
-
-Output is the same as the basic inner join example.
-
-### Joining Multiple Tables
-
-Join three tables in sequence:
-
-```bash
-rabbet /path/to/customers.csv /path/to/orders.csv /path/to/items.csv --on id,customer_id,order_id,order_id
-```
-
-Expected output (abbreviated):
-```
-| id | name | ... | order_id | ... | item_id | product |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | John Smith | ... | 101 | ... | 201 | Laptop |
-| 1 | John Smith | ... | 101 | ... | 202 | Mouse |
-| 2 | Jane Doe | ... | 102 | ... | 203 | Keyboard |
-```
-
-### Working with TSV Files
-
-```bash
-rabbet /path/to/data.tsv /path/to/other_data.tsv --on id --delimiter $'\t'
-```
-
-Expected output (assuming TSV files have matching ids):
-```
-| id | name | value | category | active |
-| --- | --- | --- | --- | --- |
-| 1 | Alice | 100 | A | true |
-| 2 | Bob | 200 |
-
-## Join Types
-
-Rabbet supports the following join types:
-
-| Type | Description |
-|------|-------------|
-| `inner` (default) | Returns rows when there is a match in both tables |
-| `left` | Returns all rows from the left table and matching rows from the right table |
-| `right` | Returns all rows from the right table and matching rows from the left table |
-| `outer` | Returns all rows when there is a match in either left or right table |
-| `cross` | Returns the Cartesian product of both tables |
-
-## CLI Arguments
-
-```
-USAGE:
-    rabbet [OPTIONS] <TABLES>...
-
-ARGS:
-    <TABLES>...    Input tables (files or '-' for stdin)
-
-OPTIONS:
-    --on <COLUMNS>        Columns to join on (comma separated)
-    --type <TYPE>         Type of join to perform [default: inner] [possible values: inner, left, right, outer, cross]
-    --fmt <FORMAT>        Output format [default: markdown] [possible values: markdown, csv, tsv]
-    --delimiter <CHAR>    Delimiter for input files [default: ,]
-    -h, --help            Print help information
-    -V, --version         Print version information
-```
-
-### Join Column Specification
-
-The `--on` argument accepts a comma-separated list of column names:
-
-- With a single value (`--on id`): Joins tables on columns with this name in all tables
-- With two values (`--on id,customer_id`): Joins where the first table's `id` matches the second table's `customer_id`
-- With multiple values: For multi-table joins, column pairs alternate between tables (left1,right1,left2,right2...)
-
-For cross joins, the `--on` parameter is not required.
-
-## Examples with Actual Test Data
-
-Our repository contains test data you can use to try out the tool. Let's look at some examples using the actual test files.
-
-### Sample Test Data
-
-**tests/data/customers.csv:**
-```csv
-id,name,email,city,region,country,join_date
-1,John Smith,john.smith@example.com,New York,NY,USA,2023-01-15
-2,Emma Johnson,emma.j@example.com,London,England,UK,2023-02-20
-3,Miguel Santos,miguel.s@example.com,Madrid,Madrid,Spain,2023-03-10
-4,Sophie Martin,sophie.m@example.com,Paris,Île-de-France,France,2023-04-05
-5,Li Wei,li.wei@example.com,Beijing,Beijing,China,2023-05-12
-6,Mary Williams,mary.w@example.com,Sydney,NSW,Australia,2023-06-18
-```
-
-**tests/data/orders.csv:**
-```csv
-id,order_id,customer_id,order_date,amount,status
-1,ORD-001,1,2023-02-01,125.99,Delivered
-2,ORD-002,2,2023-02-15,89.50,Delivered
-3,ORD-003,1,2023-03-10,45.25,Delivered
-4,ORD-004,3,2023-04-05,220.00,Shipped
-5,ORD-005,2,2023-04-22,65.75,Shipped
-6,ORD-006,4,2023-05-15,175.25,Processing
-7,ORD-007,1,2023-06-10,95.00,Processing
-8,ORD-008,7,2023-06-20,150.50,Processing
-```
-
-### Inner Join Example with Test Data
-
-Command:
-```bash
-rabbet tests/data/customers.csv tests/data/orders.csv --on id,customer_id --fmt csv
-```
-
-Output:
-```csv
-id,name,email,city,region,country,join_date,id,order_id,order_date,amount,status
-1,John Smith,john.smith@example.com,New York,NY,USA,2023-01-15,1,ORD-001,2023-02-01,125.99,Delivered
-1,John Smith,john.smith@example.com,New York,NY,USA,2023-01-15,3,ORD-003,2023-03-10,45.25,Delivered
-1,John Smith,john.smith@example.com,New York,NY,USA,2023-01-15,7,ORD-007,2023-06-10,95.00,Processing
-2,Emma Johnson,emma.j@example.com,London,England,UK,2023-02-20,2,ORD-002,2023-02-15,89.50,Delivered
-2,Emma Johnson,emma.j@example.com,London,England,UK,2023-02-20,5,ORD-005,2023-04-22,65.75,Shipped
-3,Miguel Santos,miguel.s@example.com,Madrid,Madrid,Spain,2023-03-10,4,ORD-004,2023-04-05,220.00,Shipped
-4,Sophie Martin,sophie.m@example.com,Paris,Île-de-France,France,2023-04-05,6,ORD-006,2023-05-15,175.25,Processing
-```
-
-### Left Join Example with Test Data
-
-Command:
-```bash
-rabbet tests/data/customers.csv tests/data/orders.csv --on id,customer_id --type left --fmt csv
-```
-
-Output:
-```csv
-id,name,email,city,region,country,join_date,id,order_id,order_date,amount,status
-1,John Smith,john.smith@example.com,New York,NY,USA,2023-01-15,1,ORD-001,2023-02-01,125.99,Delivered
-1,John Smith,john.smith@example.com,New York,NY,USA,2023-01-15,3,ORD-003,2023-03-10,45.25,Delivered
-1,John Smith,john.smith@example.com,New York,NY,USA,2023-01-15,7,ORD-007,2023-06-10,95.00,Processing
-2,Emma Johnson,emma.j@example.com,London,England,UK,2023-02-20,2,ORD-002,2023-02-15,89.50,Delivered
-2,Emma Johnson,emma.j@example.com,London,England,UK,2023-02-20,5,ORD-005,2023-04-22,65.75,Shipped
-3,Miguel Santos,miguel.s@example.com,Madrid,Madrid,Spain,2023-03-10,4,ORD-004,2023-04-05,220.00,Shipped
-4,Sophie Martin,sophie.m@example.com,Paris,Île-de-France,France,2023-04-05,6,ORD-006,2023-05-15,175.25,Processing
-5,Li Wei,li.wei@example.com,Beijing,Beijing,China,2023-05-12,,,,,,
-6,Mary Williams,mary.w@example.com,Sydney,NSW,Australia,2023-06-18,,,,,,
-```
+This performs an inner join between `tests/data/basic/customers.csv` and `tests/data/basic/orders.csv` on the `customer_id`.
 
 ## Development
 
-### Running Tests
+### Formatting
 
-```bash
-# Run all tests
-cargo test
-
-# Run a specific test
-cargo test test_inner_join
+```sh
+> cargo fmt
 ```
 
-### Project Structure
+### Linting
 
-- `src/args.rs` - Command-line argument parsing and validation
-- `src/tables.rs` - Table structure, reading, and formatting
-- `src/join.rs` - Hash-based join implementations
-- `src/main.rs` - CLI entry point
+```sh
+cargo clippy --fix --allow-dirty
+```
 
-## License
+### Running Tests
 
-MIT or Apache-2.0, at your option.
+```sh
+> cargo llvm-cov
+```
+
+### Benchmarking
+
+I don't have any specific benchmarks setup yet, but I haven been comparing against `join` with `hyperfine`.
+
+```sh
+hyperfine -N --warmup 1 'rabbet join tests/data/basic/orders.csv tests/data/basic/customers.csv --on customer_id'
+```
 
 ## Contributing
 
