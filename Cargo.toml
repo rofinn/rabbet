@@ -5,7 +5,13 @@ rust-version = "1.85.0"
 edition = "2024"
 
 [dependencies]
-clap = { version = "4", default-features = false, features = ["std", "derive"] }
+clap = { version = "4", default-features = false, features = [
+    "std",
+    "derive",
+    "help",
+    "usage",
+    "error-context",
+] }
 itertools = { version = "0.14.0", default-features = false }
 polars = { version = "0.48", default-features = false, features = [
     "csv",

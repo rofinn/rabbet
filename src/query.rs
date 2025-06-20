@@ -16,7 +16,7 @@ pub struct QueryArgs {
     pub r#as: Vec<String>,
 
     /// The SQL query to execute
-    #[arg(required = true)]
+    #[arg(required = true, last = true)]
     pub query: String,
 }
 
