@@ -1,0 +1,44 @@
+Test join subcommand help
+
+```console
+$ rabbet join --help
+Join
+
+Usage: rabbet join [OPTIONS] <TABLES>...
+
+Arguments:
+  <TABLES>...
+          Input tables (files or '-' for stdin)
+
+Options:
+      --as <AS>
+          Name your tables
+
+      --format <FORMAT>
+          Output format
+          
+          [default: auto]
+
+          Possible values:
+          - auto:  Automatically detect based on terminal (default)
+          - table: Table format output
+          - csv:   CSV format output
+
+      --on <ON>
+          Columns to join on (comma separated)
+
+      --type <TYPE>
+          Type of join to perform
+          
+          [default: inner]
+          [possible values: inner, left, right, outer]
+
+      --delimiter <DELIMITER>
+          Delimiter for input files
+          
+          [default: ,]
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```

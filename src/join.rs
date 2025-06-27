@@ -7,6 +7,7 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::io;
 
+use crate::args::OutputFormat;
 use crate::io::{read_data, write_data};
 
 #[allow(clippy::expect_used)]
@@ -20,13 +21,6 @@ pub enum JoinType {
     Left,
     Right,
     Outer,
-}
-
-#[derive(Debug, Clone, ValueEnum, PartialEq, Eq)]
-pub enum OutputFormat {
-    Default,
-    Csv,
-    Tsv,
 }
 
 #[derive(Args, Debug)]
@@ -46,10 +40,6 @@ pub struct JoinArgs {
     /// Type of join to perform
     #[arg(long, value_enum, default_value = "inner")]
     pub r#type: JoinType,
-
-    /// Output format
-    #[arg(long, value_enum, default_value = "default")]
-    pub fmt: OutputFormat,
 
     /// Delimiter for input files
     #[arg(long, default_value = ",")]
@@ -82,7 +72,7 @@ impl JoinArgs {
         Ok(())
     }
 
-    pub fn execute(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn execute(&self, format: &OutputFormat) -> Result<(), Box<dyn std::error::Error>> {
         let on_map = parse_on_strings(&self.on);
         let mut tables = create_tables(&self.tables, &self.r#as, on_map);
         #[allow(clippy::expect_used)]
@@ -92,7 +82,7 @@ impl JoinArgs {
             result = result.join(&table, self.r#type);
         }
 
-        write_data(result.df)?;
+        write_data(result.df, format)?;
 
         Ok(())
     }
@@ -332,7 +322,7 @@ mod tests {
             r#as: vec!["T1".to_string(), "T2".to_string()],
             on: vec!["id".to_string()],
             r#type: JoinType::Inner,
-            fmt: OutputFormat::Default,
+
             delimiter: ',',
         };
 
@@ -347,7 +337,7 @@ mod tests {
             r#as: vec![],
             on: vec!["id".to_string()],
             r#type: JoinType::Inner,
-            fmt: OutputFormat::Default,
+
             delimiter: ',',
         };
 
@@ -367,7 +357,7 @@ mod tests {
             r#as: vec!["T1".to_string()], // Only one name for two tables
             on: vec!["id".to_string()],
             r#type: JoinType::Inner,
-            fmt: OutputFormat::Default,
+
             delimiter: ',',
         };
 
@@ -387,7 +377,7 @@ mod tests {
             r#as: vec![],
             on: vec![], // No join columns specified
             r#type: JoinType::Inner,
-            fmt: OutputFormat::Default,
+
             delimiter: ',',
         };
 

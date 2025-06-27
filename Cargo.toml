@@ -25,6 +25,7 @@ termsize = { version = "0.1", default-features = false }
 
 [dev-dependencies]
 tempfile = "3.0"
+trycmd = "0.15"
 
 [lints.clippy]
 # Deny common clippy lints that catch potential bugs or poor practices

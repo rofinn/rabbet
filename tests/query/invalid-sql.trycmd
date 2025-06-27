@@ -1,0 +1,8 @@
+Test query command with invalid SQL syntax
+
+```console
+$ rabbet query tests/data/basic/orders.csv -- "SELECT * FORM orders"
+? 1
+Error: SQLInterface(ErrString("sql parser error: Expected: end of statement, found: FORM at Line: 1, Column: 10"))
+
+```
