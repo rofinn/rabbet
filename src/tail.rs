@@ -1,6 +1,7 @@
 use clap::Args;
 use std::io;
 
+use crate::args::OutputFormat;
 use crate::io::{read_data, write_data};
 
 #[derive(Args, Debug)]
@@ -22,13 +23,13 @@ impl TailArgs {
     }
 
     #[allow(clippy::expect_used)]
-    pub fn execute(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn execute(&self, format: &OutputFormat) -> Result<(), Box<dyn std::error::Error>> {
         // TODO: Update read_data to use a circular buffer for better performance
         let data = read_data(self.table.as_str(), Some(',')).expect("Failed to read data");
 
         let tail_data = data.tail(Some(self.n));
 
-        write_data(tail_data)?;
+        write_data(tail_data, format)?;
 
         Ok(())
     }
@@ -56,7 +57,7 @@ mod tests {
             n: 5,
         };
 
-        args.execute().unwrap();
+        args.execute(&crate::args::OutputFormat::Auto).unwrap();
     }
 
     #[test]
@@ -67,6 +68,6 @@ mod tests {
         };
 
         assert!(args.validate().is_ok());
-        assert!(args.execute().is_ok());
+        assert!(args.execute(&crate::args::OutputFormat::Auto).is_ok());
     }
 }

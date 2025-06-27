@@ -1,0 +1,13 @@
+Test head command with table format output
+
+```console
+$ rabbet head tests/data/basic/orders.csv -n 3
+╭────────────────────────────────────────────────────────────────────────╮
+│ order_id    customer_id    product_id    quantity   price   order_date │
+╞════════════════════════════════════════════════════════════════════════╡
+│ ORDER-001   CUSTOMER-003   PRODUCT-005   1          10.0    2022-01-01 │
+│ ORDER-002   CUSTOMER-003   PRODUCT-005   2          20.0    2022-01-02 │
+│ ORDER-003   CUSTOMER-003   PRODUCT-003   3          30.0    2022-01-03 │
+╰────────────────────────────────────────────────────────────────────────╯
+
+```

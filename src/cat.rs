@@ -1,6 +1,7 @@
 use clap::Args;
 use std::io;
 
+use crate::args::OutputFormat;
 use crate::io::{read_data, write_data};
 
 #[derive(Args, Debug)]
@@ -18,9 +19,10 @@ impl CatArgs {
     }
 
     #[allow(clippy::expect_used)]
-    pub fn execute(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn execute(&self, format: &OutputFormat) -> Result<(), Box<dyn std::error::Error>> {
         write_data(
             read_data(self.table.as_str(), Some(',')).expect("Failed to read data"),
+            format,
         )?;
 
         Ok(())
@@ -47,7 +49,7 @@ mod tests {
             table: "nonexistent_file.csv".to_string(),
         };
 
-        args.execute().unwrap();
+        args.execute(&crate::args::OutputFormat::Auto).unwrap();
     }
 
     #[test]
@@ -57,6 +59,6 @@ mod tests {
         };
 
         assert!(args.validate().is_ok());
-        assert!(args.execute().is_ok());
+        assert!(args.execute(&crate::args::OutputFormat::Auto).is_ok());
     }
 }

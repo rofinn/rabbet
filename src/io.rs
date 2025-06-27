@@ -3,6 +3,8 @@ use std::env;
 use std::fs::File;
 use std::io::{self, Cursor, IsTerminal, Read, Write};
 
+use crate::args::OutputFormat;
+
 /// # IO Module
 ///
 /// This module provides functionality to read CSV data into Polars `DataFrames`
@@ -52,7 +54,7 @@ use std::io::{self, Cursor, IsTerminal, Read, Write};
 /// - `POLARS_TABLE_WIDTH`: Maximum table width in characters
 /// - `POLARS_FMT_MAX_ROWS`: Maximum number of rows to display
 /// - Various formatting options for clean, readable output
-pub fn config() {
+pub fn config(format: &OutputFormat) {
     fn set_var(key: &str, default: &str) {
         if env::var(key).is_err() {
             unsafe {
@@ -61,7 +63,15 @@ pub fn config() {
         }
     }
 
-    if std::io::stdout().is_terminal() {
+    let should_format_table = match format {
+        OutputFormat::Auto => {
+            env::var("RABBET_TABLE_OUTPUT").is_ok() || std::io::stdout().is_terminal()
+        }
+        OutputFormat::Table => true,
+        OutputFormat::Csv => false,
+    };
+
+    if should_format_table {
         set_var("POLARS_FMT_TABLE_FORMATTING", "UTF8_BORDERS_ONLY");
         set_var("POLARS_FMT_TABLE_HIDE_COLUMN_DATA_TYPES", "1");
         set_var("POLARS_FMT_TABLE_HIDE_DATAFRAME_SHAPE_INFORMATION", "1");
@@ -152,9 +162,20 @@ pub fn read_data(
 /// // Write the DataFrame to stdout as CSV
 /// write_data(df)?;
 /// ```
-pub fn write_data(mut df: DataFrame) -> Result<(), Box<dyn std::error::Error>> {
+pub fn write_data(
+    mut df: DataFrame,
+    format: &OutputFormat,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Print final result
-    if std::io::stdout().is_terminal() {
+    let should_format_table = match format {
+        OutputFormat::Auto => {
+            env::var("RABBET_TABLE_OUTPUT").is_ok() || std::io::stdout().is_terminal()
+        }
+        OutputFormat::Table => true,
+        OutputFormat::Csv => false,
+    };
+
+    if should_format_table {
         println!("{df:?}");
     } else {
         let mut buffer = Vec::new();
@@ -178,8 +199,9 @@ mod tests {
     #[test]
     #[allow(clippy::expect_used)]
     fn test_config() {
+        use crate::args::OutputFormat;
         // Call the setup function - it should not panic
-        config();
+        config(&OutputFormat::Auto);
 
         // Only test environment variables if we're in a terminal environment
         if std::io::stdout().is_terminal() {

@@ -3,6 +3,7 @@ use itertools::izip;
 use polars::{prelude::IntoLazy, sql::SQLContext};
 use std::io;
 
+use crate::args::OutputFormat;
 use crate::io::{read_data, write_data};
 
 #[derive(Args, Debug)]
@@ -39,7 +40,7 @@ impl QueryArgs {
         Ok(())
     }
 
-    pub fn execute(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn execute(&self, format: &OutputFormat) -> Result<(), Box<dyn std::error::Error>> {
         let mut ctx = SQLContext::new();
         let names = if self.r#as.is_empty() {
             (0..self.tables.len())
@@ -55,7 +56,7 @@ impl QueryArgs {
 
         let result = ctx.execute(&self.query)?.collect()?;
 
-        write_data(result)?;
+        write_data(result, format)?;
 
         Ok(())
     }
@@ -118,7 +119,7 @@ mod tests {
         assert!(args.validate().is_ok());
 
         // Test that the query executes without error
-        let result = args.execute();
+        let result = args.execute(&crate::args::OutputFormat::Auto);
         assert!(result.is_ok(), "Query execution should succeed");
     }
 
@@ -135,7 +136,7 @@ mod tests {
         assert!(args.validate().is_ok());
 
         // Test that the query executes without error using default table name
-        let result = args.execute();
+        let result = args.execute(&crate::args::OutputFormat::Auto);
         assert!(
             result.is_ok(),
             "Query execution with default table name should succeed"

@@ -1,0 +1,12 @@
+Test join command with CSV format output
+
+```console
+$ rabbet join tests/data/basic/customers.csv tests/data/basic/orders.csv --on customer_id --format csv
+customer_id,customer_name,customer_email,customer_phone,customer_address,customer_city,customer_state,customer_zipcode,customer_country,order_id,product_id,quantity,price,order_date
+CUSTOMER-003,Michael Johnson,michael.johnson@example.com,555-9876,789 Oak St,Anytown,CA,90210,USA,ORDER-001,PRODUCT-005,1,10.0,2022-01-01
+CUSTOMER-003,Michael Johnson,michael.johnson@example.com,555-9876,789 Oak St,Anytown,CA,90210,USA,ORDER-002,PRODUCT-005,2,20.0,2022-01-02
+CUSTOMER-003,Michael Johnson,michael.johnson@example.com,555-9876,789 Oak St,Anytown,CA,90210,USA,ORDER-003,PRODUCT-003,3,30.0,2022-01-03
+CUSTOMER-004,Emily Davis,emily.davis@example.com,555-2468,321 Pine St,Anytown,CA,90210,USA,ORDER-004,PRODUCT-002,4,40.0,2022-01-04
+CUSTOMER-005,Robert Brown,robert.brown@example.com,555-3698,654 Maple St,Anytown,CA,90210,USA,ORDER-005,PRODUCT-001,5,50.0,2022-01-05
+
+```
