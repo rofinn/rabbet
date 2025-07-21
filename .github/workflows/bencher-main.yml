@@ -1,0 +1,39 @@
+name: Benchmark Main Branch
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  benchmark_base_branch:
+    name: Continuous Benchmarking with Bencher
+    permissions:
+      checks: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # zizmor: ignore[unpinned-uses]
+        with:
+          persist-credentials: false
+
+      - uses: dtolnay/rust-toolchain@stable # zizmor: ignore[unpinned-uses]
+
+      - uses: Swatinem/rust-cache@v2 # zizmor: ignore[unpinned-uses]
+
+      - name: Install hyperfine
+        run: |
+          wget https://github.com/sharkdp/hyperfine/releases/latest/download/hyperfine_1.19.0_amd64.deb
+          sudo dpkg -i hyperfine_1.19.0_amd64.deb
+
+      - name: Install bencher CLI
+        uses: bencherdev/bencher@main # zizmor: ignore[unpinned-uses]
+
+      - name: Run benchmarks
+        env:
+          BENCHER_API_TOKEN: ${{ secrets.BENCHER_API_TOKEN }}
+          BENCHER_PROJECT: rabbet
+          BENCHER_BRANCH: main
+          BENCHER_TESTBED: ubuntu-latest
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x scripts/benchmark
+          ./scripts/benchmark

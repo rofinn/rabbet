@@ -2,12 +2,29 @@
 
 set -e
 
-RED=$(tput setaf 1)
-GREEN=$(tput setaf 2)
-YELLOW=$(tput setaf 3)
-BLUE=$(tput setaf 4)
-BOLD=$(tput bold)
-RESET=$(tput sgr0)
+# Human readable limits
+BINARY_SIZE_LIMIT_MB=25
+BASE_LATENCY_LIMIT_SEC=0.05
+
+# Units used by bencher.dev
+BINARY_SIZE_LIMIT_BYTES=$(echo "scale=2; $BINARY_SIZE_LIMIT_MB * 1024 * 1024" | bc -l)
+BASE_LATENCY_LIMIT_NS=$(echo "$BASE_LATENCY_LIMIT_SEC * 1000000000" | bc -l)
+
+if [ -t 1 ] && [ -n "$TERM" ] && [ "$TERM" != "dumb" ]; then
+    RED=$(tput setaf 1)
+    GREEN=$(tput setaf 2)
+    YELLOW=$(tput setaf 3)
+    BLUE=$(tput setaf 4)
+    BOLD=$(tput bold)
+    RESET=$(tput sgr0)
+else
+    RED=""
+    GREEN=""
+    YELLOW=""
+    BLUE=""
+    BOLD=""
+    RESET=""
+fi
 
 echo "${BOLD}                    Benchmarking rabbet                     ${RESET}"
 echo ""
@@ -39,6 +56,9 @@ else
     fi
 fi
 
+BENCHER_GITHUB_ARG=()
+[[ -n "$GITHUB_TOKEN" ]] && BENCHER_GITHUB_ARG=("--github-token" "$GITHUB_TOKEN")
+
 CUSTOMERS_FILE="tests/data/basic/customers.csv"
 ORDERS_FILE="tests/data/basic/orders.csv"
 PRODUCTS_FILE="tests/data/basic/products.csv"
@@ -57,11 +77,11 @@ echo "-------------------- Checking binary size --------------------"
 BINARY_PATH="target/release/rabbet"
 BINARY_SIZE_BYTES=$(stat -f%z "$BINARY_PATH" 2>/dev/null || stat -c%s "$BINARY_PATH")
 BINARY_SIZE_MB=$(echo "scale=2; $BINARY_SIZE_BYTES / 1024 / 1024" | bc -l)
-if (( $(echo "$BINARY_SIZE_MB > 15" | bc -l) )); then
-    echo "${RED}Failure - Binary size ($BINARY_SIZE_MB MB) exceeds 15MB limit!${RESET}"
+if (( $(echo "$BINARY_SIZE_MB > $BINARY_SIZE_LIMIT_MB" | bc -l) )); then
+    echo "${RED}Failure - Binary size ($BINARY_SIZE_MB MB) exceeds $BINARY_SIZE_LIMIT_MB MB limit!${RESET}"
     exit 1
 else
-    echo "${GREEN}Success - Binary size within 15MB limit ($BINARY_SIZE_MB MB)${RESET}"
+    echo "${GREEN}Success - Binary size within $BINARY_SIZE_LIMIT_MB MB limit ($BINARY_SIZE_MB MB)${RESET}"
 
     # Binary size benchmark (only for Bencher)
     if $USE_BENCHER; then
@@ -71,8 +91,13 @@ else
             --project "$BENCHER_PROJECT" \
             --branch "$BENCHER_BRANCH" \
             --testbed "${BENCHER_TESTBED:-localhost}" \
+            --threshold-measure file-size \
+            --threshold-test static \
+            --threshold-lower-boundary _ \
+            --threshold-upper-boundary "$BINARY_SIZE_LIMIT_BYTES" \
             --adapter json \
             --file-size "$BINARY_PATH" \
+            "${BENCHER_GITHUB_ARG[@]}" \
             --err \
             "echo 'Binary size recorded'"
     fi
@@ -99,7 +124,16 @@ run_benchmark() {
             --project "$BENCHER_PROJECT" \
             --branch "$BENCHER_BRANCH" \
             --testbed "${BENCHER_TESTBED:-localhost}" \
+            --threshold-measure latency \
+            --threshold-test t_test \
+            --threshold-max-sample-size 64 \
+            --threshold-upper-boundary 0.99 \
+            --threshold-measure latency \
+            --threshold-test static \
+            --threshold-upper-boundary "$BASE_LATENCY_LIMIT_NS" \
+            --thresholds-reset \
             --adapter shell_hyperfine \
+            "${BENCHER_GITHUB_ARG[@]}" \
             --file "$temp_file" \
             --err \
             "$hyperfine_cmd --export-json $temp_file '$command'"
@@ -119,10 +153,10 @@ run_benchmark() {
 
             printf "   Mean: %.4fs | Min: %.4fs | Max: %.4fs" "$mean_time" "$min_time" "$max_time"
 
-            if (( $(echo "$mean_time < 0.1" | bc -l) )); then
-                echo "${GREEN} Success - Mean time is less than 0.1 seconds${RESET}"
+            if (( $(echo "$mean_time < $BASE_LATENCY_LIMIT_SEC" | bc -l) )); then
+                echo "${GREEN} Success - Mean time is less than $BASE_LATENCY_LIMIT_SEC seconds${RESET}"
             else
-                echo "${RED} Failure - Mean time is greater than 0.1 seconds${RESET}"
+                echo "${RED} Failure - Mean time is greater than $BASE_LATENCY_LIMIT_SEC seconds${RESET}"
             fi
         fi
     fi
