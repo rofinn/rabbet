@@ -57,7 +57,7 @@ else
 fi
 
 BENCHER_GITHUB_ARG=()
-[[ -n "$GITHUB_TOKEN" ]] && BENCHER_GITHUB_ARG=("--github-token" "$GITHUB_TOKEN")
+[[ -n "$GITHUB_TOKEN" ]] && BENCHER_GITHUB_ARG=("--github-actions" "$GITHUB_TOKEN")
 
 CUSTOMERS_FILE="tests/data/basic/customers.csv"
 ORDERS_FILE="tests/data/basic/orders.csv"
