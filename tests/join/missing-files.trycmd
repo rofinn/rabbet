@@ -2,10 +2,10 @@ Test join command with missing input files
 
 ```console
 $ rabbet join nonexistent1.csv nonexistent2.csv --on id
-? 101
+? 1
+Error: Failed to read table T1 from nonexistent1.csv
 
-thread 'main' panicked at src/join.rs:101:44:
-Failed to read data: Os { code: 2, kind: NotFound, message: "No such file or directory" }
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+Caused by:
+    No such file or directory (os error 2)
 
 ```

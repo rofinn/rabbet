@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::{Parser, ValueEnum};
 
 use crate::cat::CatArgs;
@@ -46,7 +47,7 @@ pub enum Commands {
 }
 
 impl Args {
-    pub fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn run(&self) -> Result<()> {
         match &self.command {
             Commands::Join(join_args) => {
                 join_args.validate()?;
