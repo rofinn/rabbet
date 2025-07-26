@@ -1,0 +1,181 @@
+#!/bin/bash
+
+set -e
+
+# Human readable limits
+BINARY_SIZE_LIMIT_MB=25
+BASE_LATENCY_LIMIT_SEC=0.05
+
+# Units used by bencher.dev
+BINARY_SIZE_LIMIT_BYTES=$(echo "scale=2; $BINARY_SIZE_LIMIT_MB * 1024 * 1024" | bc -l)
+BASE_LATENCY_LIMIT_NS=$(echo "$BASE_LATENCY_LIMIT_SEC * 1000000000" | bc -l)
+
+if [ -t 1 ] && [ -n "$TERM" ] && [ "$TERM" != "dumb" ]; then
+    RED=$(tput setaf 1)
+    GREEN=$(tput setaf 2)
+    YELLOW=$(tput setaf 3)
+    BLUE=$(tput setaf 4)
+    BOLD=$(tput bold)
+    RESET=$(tput sgr0)
+else
+    RED=""
+    GREEN=""
+    YELLOW=""
+    BLUE=""
+    BOLD=""
+    RESET=""
+fi
+
+echo "${BOLD}                    Benchmarking rabbet                     ${RESET}"
+echo ""
+
+echo "-------------------- Validating Setup --------------------"
+
+# Check for required hyperfine
+if ! command -v hyperfine &> /dev/null; then
+    echo "${RED}ERROR - hyperfine is required for benchmarking.${RESET}"
+    echo "${BLUE}  https://github.com/sharkdp/hyperfine#installation${RESET}"
+    exit 1
+fi
+
+USE_BENCHER=false
+if command -v bencher &> /dev/null &&
+   [[ -n "$BENCHER_API_TOKEN" ]] &&
+   [[ -n "$BENCHER_PROJECT" ]] &&
+   [[ -n "$BENCHER_BRANCH" ]]; then
+    USE_BENCHER=true
+    echo "${BLUE}Bencher integration enabled.${RESET}"
+    echo "${BLUE}  Project: $BENCHER_PROJECT${RESET}"
+    echo "${BLUE}  Branch: $BENCHER_BRANCH${RESET}"
+    echo "${BLUE}  Testbed: ${BENCHER_TESTBED:-localhost}${RESET}"
+else
+    echo "${BLUE}Running local benchmarks only${RESET}"
+    if [[ -n "$BENCHER_API_TOKEN" ]]; then
+        echo "${YELLOW}  To enable Bencher: install bencher CLI and set the BENCHER_API_TOKEN, BENCHER_PROJECT, BENCHER_BRANCH${RESET}"
+        echo "${YELLOW}  https://bencher.dev/docs/tutorial/quick-start/?adapter=shell_hyperfine#install-bencher-cli${RESET}"
+    fi
+fi
+
+BENCHER_GITHUB_ARG=()
+[[ -n "$GITHUB_TOKEN" ]] && BENCHER_GITHUB_ARG=("--github-actions" "$GITHUB_TOKEN")
+
+CUSTOMERS_FILE="tests/data/basic/customers.csv"
+ORDERS_FILE="tests/data/basic/orders.csv"
+PRODUCTS_FILE="tests/data/basic/products.csv"
+
+if [[ ! -f "$CUSTOMERS_FILE" ]] || [[ ! -f "$ORDERS_FILE" ]] || [[ ! -f "$PRODUCTS_FILE" ]]; then
+    echo "${RED}ERROR - Test data files not found. Please run from project root.${RESET}"
+    exit 1
+fi
+echo ""
+
+echo "-------------------- Building release binary --------------------"
+cargo build --release
+echo ""
+
+echo "-------------------- Checking binary size --------------------"
+BINARY_PATH="target/release/rabbet"
+BINARY_SIZE_BYTES=$(stat -f%z "$BINARY_PATH" 2>/dev/null || stat -c%s "$BINARY_PATH")
+BINARY_SIZE_MB=$(echo "scale=2; $BINARY_SIZE_BYTES / 1024 / 1024" | bc -l)
+if (( $(echo "$BINARY_SIZE_MB > $BINARY_SIZE_LIMIT_MB" | bc -l) )); then
+    echo "${RED}Failure - Binary size ($BINARY_SIZE_MB MB) exceeds $BINARY_SIZE_LIMIT_MB MB limit!${RESET}"
+    exit 1
+else
+    echo "${GREEN}Success - Binary size within $BINARY_SIZE_LIMIT_MB MB limit ($BINARY_SIZE_MB MB)${RESET}"
+
+    # Binary size benchmark (only for Bencher)
+    if $USE_BENCHER; then
+        echo ""
+        echo "${BLUE}Recording binary size for bencher ...${RESET}"
+        bencher run \
+            --project "$BENCHER_PROJECT" \
+            --branch "$BENCHER_BRANCH" \
+            --testbed "${BENCHER_TESTBED:-localhost}" \
+            --threshold-measure file-size \
+            --threshold-test static \
+            --threshold-lower-boundary _ \
+            --threshold-upper-boundary "$BINARY_SIZE_LIMIT_BYTES" \
+            --adapter json \
+            --file-size "$BINARY_PATH" \
+            "${BENCHER_GITHUB_ARG[@]}" \
+            --err \
+            "echo 'Binary size recorded'"
+    fi
+fi
+echo ""
+
+
+echo "-------------------- Running benchmarks --------------------"
+# Function to run a benchmark (with or without Bencher)
+run_benchmark() {
+    local name="$1"
+    local command="$2"
+    local hyperfine_cmd="hyperfine --warmup 3 --runs 10"
+
+    echo ""
+    echo "Running $name benchmark..."
+
+    # Export to temp file for local analysis
+    local temp_file="/tmp/${name}_results.json"
+
+    if $USE_BENCHER; then
+        # Export to stdout for Bencher
+        bencher run \
+            --project "$BENCHER_PROJECT" \
+            --branch "$BENCHER_BRANCH" \
+            --testbed "${BENCHER_TESTBED:-localhost}" \
+            --threshold-measure latency \
+            --threshold-test t_test \
+            --threshold-max-sample-size 64 \
+            --threshold-upper-boundary 0.99 \
+            --threshold-measure latency \
+            --threshold-test static \
+            --threshold-upper-boundary "$BASE_LATENCY_LIMIT_NS" \
+            --thresholds-reset \
+            --adapter shell_hyperfine \
+            "${BENCHER_GITHUB_ARG[@]}" \
+            --file "$temp_file" \
+            --err \
+            "$hyperfine_cmd --export-json $temp_file '$command'"
+    else
+
+        $hyperfine_cmd --export-json "$temp_file" "$command"
+
+        # Extract and show results
+        if [[ -f "$temp_file" ]]; then
+            local mean_time
+            local min_time
+            local max_time
+
+            mean_time=$(jq -r '.results[0].mean' "$temp_file")
+            min_time=$(jq -r '.results[0].min' "$temp_file")
+            max_time=$(jq -r '.results[0].max' "$temp_file")
+
+            printf "   Mean: %.4fs | Min: %.4fs | Max: %.4fs" "$mean_time" "$min_time" "$max_time"
+
+            if (( $(echo "$mean_time < $BASE_LATENCY_LIMIT_SEC" | bc -l) )); then
+                echo "${GREEN} Success - Mean time is less than $BASE_LATENCY_LIMIT_SEC seconds${RESET}"
+            else
+                echo "${RED} Failure - Mean time is greater than $BASE_LATENCY_LIMIT_SEC seconds${RESET}"
+            fi
+        fi
+    fi
+}
+
+run_benchmark "cat" \
+    "$BINARY_PATH cat $CUSTOMERS_FILE --format csv"
+
+run_benchmark "head" \
+    "$BINARY_PATH head $ORDERS_FILE -n 3 --format csv"
+
+run_benchmark "tail" \
+    "$BINARY_PATH tail $ORDERS_FILE -n 3 --format csv"
+
+run_benchmark "join" \
+    "$BINARY_PATH join $CUSTOMERS_FILE $ORDERS_FILE --on customer_id --format csv"
+
+run_benchmark "query_filter" \
+    "$BINARY_PATH query $ORDERS_FILE --as orders -- \"SELECT * FROM orders WHERE price > 30\""
+
+run_benchmark "query_complex" \
+    "$BINARY_PATH query $CUSTOMERS_FILE $ORDERS_FILE $PRODUCTS_FILE --as customers,orders,products -- \"SELECT c.customer_name, o.order_id, p.product_name, o.price FROM customers c JOIN orders o ON c.customer_id = o.customer_id JOIN products p ON o.product_id = p.product_id\""
