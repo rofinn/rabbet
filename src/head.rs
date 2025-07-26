@@ -1,4 +1,5 @@
 // Same behaviour as `head` in Unix, but pretty printed with polars.
+use anyhow::{Context, Result};
 use clap::Args;
 use std::io;
 
@@ -24,12 +25,15 @@ impl HeadArgs {
     }
 
     #[allow(clippy::expect_used)]
-    pub fn execute(&self, format: &OutputFormat) -> Result<(), Box<dyn std::error::Error>> {
-        let data = read_data(self.table.as_str(), Some(',')).expect("Failed to read data");
+    pub fn execute(&self, format: &OutputFormat) -> Result<()> {
+        let data = read_data(self.table.as_str(), Some(',')).with_context(|| {
+            format!("head - failed to read csv data from {}", self.table)
+        })?;
 
         let head_data = data.head(Some(self.n));
 
-        write_data(head_data, format)?;
+        write_data(head_data, format)
+            .with_context(|| "head - failed to write data to stdout".to_string())?;
 
         Ok(())
     }
@@ -49,7 +53,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Failed to read data")]
+    #[should_panic(expected = "head - failed to read csv data")]
     #[allow(clippy::unwrap_used)]
     fn test_head_nonexistent_file_panics() {
         let args = HeadArgs {

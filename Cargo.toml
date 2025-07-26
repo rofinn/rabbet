@@ -5,6 +5,7 @@ rust-version = "1.85.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.98"
 clap = { version = "4", default-features = false, features = [
     "std",
     "derive",

@@ -1,7 +1,7 @@
+use anyhow::{Context, Result, bail};
 use clap::Args;
 use itertools::izip;
 use polars::{prelude::IntoLazy, sql::SQLContext};
-use std::io;
 
 use crate::args::OutputFormat;
 use crate::io::{read_data, write_data};
@@ -22,25 +22,19 @@ pub struct QueryArgs {
 }
 
 impl QueryArgs {
-    pub fn validate(&self) -> io::Result<()> {
+    pub fn validate(&self) -> Result<()> {
         if self.tables.is_empty() {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "At least one table is required for queries",
-            ));
+            bail!("At least one table is required for queries");
         }
 
         if !self.r#as.is_empty() && self.r#as.len() != self.tables.len() {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "Number of table names must match number of tables",
-            ));
+            bail!("Number of table names must match number of tables");
         }
 
         Ok(())
     }
 
-    pub fn execute(&self, format: &OutputFormat) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn execute(&self, format: &OutputFormat) -> Result<()> {
         let mut ctx = SQLContext::new();
         let names = if self.r#as.is_empty() {
             (0..self.tables.len())
@@ -51,12 +45,22 @@ impl QueryArgs {
         };
 
         for (name, table) in izip!(names.iter(), self.tables.iter()) {
-            ctx.register(name, read_data(table, None)?.lazy());
+            ctx.register(
+                name,
+                read_data(table, None)
+                    .with_context(|| format!("query - failed to read table '{table}'"))?
+                    .lazy(),
+            );
         }
 
-        let result = ctx.execute(&self.query)?.collect()?;
+        let result = ctx
+            .execute(&self.query)
+            .with_context(|| format!("query - failed to execute query '{}'", self.query))?
+            .collect()
+            .with_context(|| "query - failed to collect results".to_string())?;
 
-        write_data(result, format)?;
+        write_data(result, format)
+            .with_context(|| "query - failed to write data to stdout".to_string())?;
 
         Ok(())
     }

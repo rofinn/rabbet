@@ -1,3 +1,4 @@
+use anyhow::{Context, Result, bail};
 use clap::{Args, ValueEnum};
 use itertools::izip;
 use polars::prelude::{
@@ -5,7 +6,6 @@ use polars::prelude::{
 };
 use regex::Regex;
 use std::collections::HashMap;
-use std::io;
 
 use crate::args::OutputFormat;
 use crate::io::{read_data, write_data};
@@ -47,39 +47,34 @@ pub struct JoinArgs {
 }
 
 impl JoinArgs {
-    pub fn validate(&self) -> io::Result<()> {
+    pub fn validate(&self) -> Result<()> {
         if self.tables.len() < 2 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "At least two tables are required for joining",
-            ));
+            bail!("At least two tables are required for joining");
         }
 
         if !self.r#as.is_empty() && self.r#as.len() != self.tables.len() {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "Number of table names must match number of tables",
-            ));
+            bail!("Number of table names must match number of tables");
         }
 
         if self.on.is_empty() {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "At least one column to join on is required",
-            ));
+            bail!("At least one column to join on is required");
         }
 
         Ok(())
     }
 
-    pub fn execute(&self, format: &OutputFormat) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn execute(&self, format: &OutputFormat) -> Result<()> {
         let on_map = parse_on_strings(&self.on);
-        let mut tables = create_tables(&self.tables, &self.r#as, on_map);
-        #[allow(clippy::expect_used)]
-        let mut result = tables.next().expect("No tables found");
+        let mut tables = create_tables(&self.tables, &self.r#as, &on_map)?;
+
+        if tables.is_empty() {
+            bail!("No tables found");
+        }
+
+        let mut result = tables.remove(0);
 
         for table in tables {
-            result = result.join(&table, self.r#type);
+            result = result.join(&table, self.r#type)?;
         }
 
         write_data(result.df, format)?;
@@ -95,16 +90,18 @@ struct Table {
 }
 
 impl Table {
-    #[allow(clippy::expect_used)]
-    fn load(path: &str, name: &str, on: &[String]) -> Self {
-        Self {
-            df: read_data(path, Some(',')).expect("Failed to read data"),
+    fn load(path: &str, name: &str, on: &[String]) -> Result<Self> {
+        let df = read_data(path, Some(','))
+            .with_context(|| format!("Failed to read table {name} from {path}"))?;
+
+        Ok(Self {
+            df,
             name: name.to_string(),
             on: on.to_vec(),
-        }
+        })
     }
-    #[allow(clippy::expect_used)]
-    fn join(&self, other: &Self, method: JoinType) -> Self {
+
+    fn join(&self, other: &Self, method: JoinType) -> Result<Self> {
         let result = match method {
             JoinType::Inner => self.df.join(
                 &other.df,
@@ -136,23 +133,26 @@ impl Table {
             ),
         };
 
-        Self {
-            df: result.expect("Failed to join tables"),
+        let df = result.with_context(|| {
+            format!("Failed to join '{}' with '{}'", self.name, other.name)
+        })?;
+
+        Ok(Self {
+            df,
             name: self.name.clone(),
             on: self.on.clone(),
-        }
+        })
     }
 }
 
 fn create_tables(
     paths: &[String],
     names: &[String],
-    on: HashMap<String, Vec<String>>,
-) -> impl Iterator<Item = Table> {
-    assert!(
-        names.is_empty() || names.len() == paths.len(),
-        "Number of names must match number of tables"
-    );
+    on: &HashMap<String, Vec<String>>,
+) -> Result<Vec<Table>> {
+    if !names.is_empty() && names.len() != paths.len() {
+        bail!("Number of names must match number of tables");
+    }
 
     let labels = if names.is_empty() {
         (0..paths.len()).map(|i| format!("T{}", i + 1)).collect()
@@ -162,15 +162,20 @@ fn create_tables(
 
     let global_cols = on.get("*").cloned().unwrap_or_default();
 
-    izip!(paths, labels).map(move |(p, l)| {
-        let mut on_cols = global_cols.clone();
-        if let Some(cols) = on.get(&l) {
-            on_cols.extend_from_slice(cols);
-        }
+    izip!(paths, labels)
+        .map(|(p, l)| {
+            let mut on_cols = global_cols.clone();
+            if let Some(cols) = on.get(&l) {
+                on_cols.extend_from_slice(cols);
+            }
 
-        assert!(!on_cols.is_empty(), "No columns specified for join");
-        Table::load(p, &l, &on_cols)
-    })
+            if on_cols.is_empty() {
+                bail!("No columns specified for join on table '{l}'");
+            }
+
+            Table::load(p, &l, &on_cols)
+        })
+        .collect()
 }
 
 fn parse_on_strings(on: &[String]) -> HashMap<String, Vec<String>> {
@@ -228,7 +233,7 @@ mod tests {
         let mut on = HashMap::new();
         on.insert("*".to_string(), vec!["id".to_string()]);
 
-        let result: Vec<Table> = create_tables(&tables, &labels, on).collect();
+        let result = create_tables(&tables, &labels, &on).unwrap();
 
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].name, "users");
@@ -264,7 +269,7 @@ mod tests {
         let mut on = HashMap::new();
         on.insert("*".to_string(), vec!["id".to_string()]);
 
-        let result: Vec<Table> = create_tables(&tables, &labels, on).collect();
+        let result = create_tables(&tables, &labels, &on).unwrap();
 
         assert_eq!(result.len(), 3);
         assert_eq!(result[0].name, "T1");
@@ -298,7 +303,7 @@ mod tests {
         let mut on = HashMap::new();
         on.insert("*".to_string(), vec!["id".to_string()]);
 
-        let _result: Vec<Table> = create_tables(&tables, &labels, on).collect();
+        let _result = create_tables(&tables, &labels, &on).unwrap();
     }
 
     #[test]
@@ -322,7 +327,6 @@ mod tests {
             r#as: vec!["T1".to_string(), "T2".to_string()],
             on: vec!["id".to_string()],
             r#type: JoinType::Inner,
-
             delimiter: ',',
         };
 
@@ -337,7 +341,6 @@ mod tests {
             r#as: vec![],
             on: vec!["id".to_string()],
             r#type: JoinType::Inner,
-
             delimiter: ',',
         };
 
@@ -357,7 +360,6 @@ mod tests {
             r#as: vec!["T1".to_string()], // Only one name for two tables
             on: vec!["id".to_string()],
             r#type: JoinType::Inner,
-
             delimiter: ',',
         };
 
@@ -377,7 +379,6 @@ mod tests {
             r#as: vec![],
             on: vec![], // No join columns specified
             r#type: JoinType::Inner,
-
             delimiter: ',',
         };
 

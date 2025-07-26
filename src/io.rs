@@ -1,3 +1,4 @@
+use anyhow::Result;
 use polars::prelude::*;
 use std::env;
 use std::fs::File;
@@ -118,10 +119,7 @@ pub fn config(format: &OutputFormat) {
 /// // Read from stdin
 /// let df = read_data(&"-".to_string(), None)?;
 /// ```
-pub fn read_data(
-    source: &str,
-    separator: Option<char>,
-) -> Result<DataFrame, Box<dyn std::error::Error>> {
+pub fn read_data(source: &str, separator: Option<char>) -> Result<DataFrame> {
     let sep = separator.unwrap_or(',') as u8;
     let mut buffer = String::new();
 
@@ -162,10 +160,7 @@ pub fn read_data(
 /// // Write the DataFrame to stdout as CSV
 /// write_data(df)?;
 /// ```
-pub fn write_data(
-    mut df: DataFrame,
-    format: &OutputFormat,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn write_data(mut df: DataFrame, format: &OutputFormat) -> Result<()> {
     // Print final result
     let should_format_table = match format {
         OutputFormat::Auto => {

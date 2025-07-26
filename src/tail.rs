@@ -1,5 +1,5 @@
+use anyhow::{Context, Result};
 use clap::Args;
-use std::io;
 
 use crate::args::OutputFormat;
 use crate::io::{read_data, write_data};
@@ -18,18 +18,21 @@ pub struct TailArgs {
 impl TailArgs {
     #[allow(clippy::unused_self)]
     #[allow(clippy::unnecessary_wraps)]
-    pub const fn validate(&self) -> io::Result<()> {
+    pub const fn validate(&self) -> Result<()> {
         Ok(())
     }
 
     #[allow(clippy::expect_used)]
-    pub fn execute(&self, format: &OutputFormat) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn execute(&self, format: &OutputFormat) -> Result<()> {
         // TODO: Update read_data to use a circular buffer for better performance
-        let data = read_data(self.table.as_str(), Some(',')).expect("Failed to read data");
+        let data = read_data(self.table.as_str(), Some(',')).with_context(|| {
+            format!("tail - failed to read csv data from {}", self.table)
+        })?;
 
         let tail_data = data.tail(Some(self.n));
 
-        write_data(tail_data, format)?;
+        write_data(tail_data, format)
+            .with_context(|| "tail - failed to write csv data to stdout".to_string())?;
 
         Ok(())
     }
@@ -49,7 +52,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Failed to read data")]
+    #[should_panic(expected = "tail - failed to read csv data")]
     #[allow(clippy::unwrap_used)]
     fn test_tail_nonexistent_file_panics() {
         let args = TailArgs {

@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use clap::Args;
 use std::io;
 
@@ -19,11 +20,13 @@ impl CatArgs {
     }
 
     #[allow(clippy::expect_used)]
-    pub fn execute(&self, format: &OutputFormat) -> Result<(), Box<dyn std::error::Error>> {
-        write_data(
-            read_data(self.table.as_str(), Some(',')).expect("Failed to read data"),
-            format,
-        )?;
+    pub fn execute(&self, format: &OutputFormat) -> Result<()> {
+        let data = read_data(self.table.as_str(), Some(',')).with_context(|| {
+            format!("cat - failed to read csv data from {}", self.table)
+        })?;
+
+        write_data(data, format)
+            .with_context(|| "cat - failed to write data to stdout".to_string())?;
 
         Ok(())
     }
@@ -42,7 +45,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Failed to read data")]
+    #[should_panic(expected = "cat - failed to read csv data")]
     #[allow(clippy::unwrap_used)]
     fn test_cat_nonexistent_file_panics() {
         let args = CatArgs {
