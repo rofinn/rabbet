@@ -58,9 +58,9 @@ repos:
         pass_filenames: false
 
       # Run tests last (most expensive)
-      - id: cargo-llvm-cov-nextest
+      - id: cargo-nextest
         name: test
-        entry: cargo llvm-cov nextest
+        entry: cargo nextest run --locked
         language: system
         types: [rust]
         pass_filenames: false
