@@ -1,0 +1,90 @@
+repos:
+  # General file fixes
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-yaml
+      - id: check-toml
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: fix-byte-order-marker
+
+  # Check for common misspellings
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        args: [--builtin=clear, rare, informal, usage, code, names]
+        exclude: ^(Cargo\.lock|target/|\.github/.*\.yml)$
+
+  # Rust-specific checks (using local hooks)
+  - repo: local
+    hooks:
+      # Shell script linting
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck
+        language: system
+        files: scripts/
+        pass_filenames: true
+
+      # Format check first (cheapest operation)
+      - id: cargo-fmt
+        name: rustfmt
+        entry: cargo fmt
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # Then syntax/type checking
+      - id: cargo-check
+        name: cargo check
+        entry: cargo check --locked
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # Linting with automatic fixes
+      - id: cargo-clippy-fix
+        name: clippy (fix)
+        entry: cargo clippy --fix --allow-dirty
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # Run tests last (most expensive)
+      - id: cargo-llvm-cov-nextest
+        name: test
+        entry: cargo llvm-cov nextest
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # Check for outdated dependencies (manual stage)
+      - id: cargo-outdated
+        name: check for outdated dependencies
+        entry: cargo outdated --exit-code 1
+        language: system
+        pass_filenames: false
+        stages: [manual]
+
+      # Security audit (manual stage)
+      - id: cargo-audit
+        name: security audit
+        entry: cargo audit
+        language: system
+        pass_filenames: false
+        stages: [manual]
+
+      # Check that Cargo.lock is up to date
+      - id: cargo-lock-check
+        name: check Cargo.lock is up to date
+        entry: cargo check --locked
+        language: system
+        types: [rust]
+        pass_filenames: false
