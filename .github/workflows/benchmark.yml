@@ -1,0 +1,82 @@
+name: Benchmark
+
+on:
+  pull_request:
+    branches: ["**"]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: dtolnay/rust-toolchain@stable # zizmor: ignore[unpinned-uses]
+        with:
+          components: rustfmt
+
+      - uses: Swatinem/rust-cache@v2 # zizmor: ignore[unpinned-uses]
+        with:
+          cache-on-failure: true
+          shared-key: "release"
+
+      - name: Install hyperfine
+        run: |
+          wget https://github.com/sharkdp/hyperfine/releases/download/v1.18.0/hyperfine_1.18.0_amd64.deb
+          sudo dpkg -i hyperfine_1.18.0_amd64.deb
+
+      - name: Install bc and jq
+        run: sudo apt-get update && sudo apt-get install -y bc jq
+
+      - name: Run benchmarks
+        id: benchmark
+        run: |
+          # Make script executable
+          chmod +x scripts/benchmark
+
+          # Run benchmark and capture output
+          ./scripts/benchmark 2>&1 | tee benchmark_output.txt
+
+          # Store exit code
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+
+      - name: Format benchmark results # zizmor: ignore[template-injection]
+        id: format
+        if: always()
+        run: |
+          # Extract appropriate section based on success/failure
+          if [ "${{ steps.benchmark.outputs.exit_code }}" = "0" ]; then
+            # Success: Get everything from "Benchmark Summary" to the end
+            sed -n '/Benchmark Summary/,$p' benchmark_output.txt > comment_body.md
+          else
+            # Failure: Get last 3 lines
+            tail -n 3 benchmark_output.txt > comment_body.md
+          fi
+
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v3 # zizmor: ignore[unpinned-uses]
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Benchmark Summary"
+
+      - name: Create or update comment
+        uses: peter-evans/create-or-update-comment@v4 # zizmor: ignore[unpinned-uses]
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-file: comment_body.md
+          edit-mode: replace
+
+      - name: Fail if benchmarks failed
+        if: steps.benchmark.outputs.exit_code != '0'
+        run: exit 1

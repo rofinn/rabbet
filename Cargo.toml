@@ -43,9 +43,24 @@ missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 module_name_repetitions = "allow"
 
+# Our default release profile is similar to what we'll distribute, but
+# 1. We want slightly faster build times, so we go with s instead of z
+# 2. We allow more than 1 codegen units
+# 3. We allow incremental compilation, so running and rerunning our benchmarks script is faster
 [profile.release]
+opt-level = "s"
+codegen-units = 16
+lto = "thin"
+panic = "abort"
+strip = "symbols"
+debug = false
+incremental = true
+overflow-checks = false
+
+# For distribution we want the smallest and most optimized builds since we won't run this often.
+[profile.dist]
+inherits = "release"
 opt-level = "z"
 codegen-units = 1
 lto = true
-panic = "abort"
-strip = true
+incremental = false

@@ -3,24 +3,20 @@
 set -e
 
 # Human readable limits
-BINARY_SIZE_LIMIT_MB=25
+BINARY_SIZE_LIMIT_MB=50
 BASE_LATENCY_LIMIT_SEC=0.05
-
-# Units used by bencher.dev
-BINARY_SIZE_LIMIT_BYTES=$(echo "scale=2; $BINARY_SIZE_LIMIT_MB * 1024 * 1024" | bc -l)
-BASE_LATENCY_LIMIT_NS=$(echo "$BASE_LATENCY_LIMIT_SEC * 1000000000" | bc -l)
 
 if [ -t 1 ] && [ -n "$TERM" ] && [ "$TERM" != "dumb" ]; then
     RED=$(tput setaf 1)
     GREEN=$(tput setaf 2)
-    YELLOW=$(tput setaf 3)
+    # YELLOW=$(tput setaf 3)
     BLUE=$(tput setaf 4)
     BOLD=$(tput bold)
     RESET=$(tput sgr0)
 else
     RED=""
     GREEN=""
-    YELLOW=""
+    # YELLOW=""
     BLUE=""
     BOLD=""
     RESET=""
@@ -38,27 +34,7 @@ if ! command -v hyperfine &> /dev/null; then
     exit 1
 fi
 
-USE_BENCHER=false
-if command -v bencher &> /dev/null &&
-   [[ -n "$BENCHER_API_TOKEN" ]] &&
-   [[ -n "$BENCHER_PROJECT" ]] &&
-   [[ -n "$BENCHER_BRANCH" ]]; then
-    USE_BENCHER=true
-    echo "${BLUE}Bencher integration enabled.${RESET}"
-    echo "${BLUE}  Project: $BENCHER_PROJECT${RESET}"
-    echo "${BLUE}  Branch: $BENCHER_BRANCH${RESET}"
-    echo "${BLUE}  Testbed: ${BENCHER_TESTBED:-localhost}${RESET}"
-else
-    echo "${BLUE}Running local benchmarks only${RESET}"
-    if [[ -n "$BENCHER_API_TOKEN" ]]; then
-        echo "${YELLOW}  To enable Bencher: install bencher CLI and set the BENCHER_API_TOKEN, BENCHER_PROJECT, BENCHER_BRANCH${RESET}"
-        echo "${YELLOW}  https://bencher.dev/docs/tutorial/quick-start/?adapter=shell_hyperfine#install-bencher-cli${RESET}"
-    fi
-fi
-
-BENCHER_GITHUB_ARG=()
-[[ -n "$GITHUB_TOKEN" ]] && BENCHER_GITHUB_ARG=("--github-actions" "$GITHUB_TOKEN")
-
+# Check for test data files
 CUSTOMERS_FILE="tests/data/basic/customers.csv"
 ORDERS_FILE="tests/data/basic/orders.csv"
 PRODUCTS_FILE="tests/data/basic/products.csv"
@@ -67,6 +43,7 @@ if [[ ! -f "$CUSTOMERS_FILE" ]] || [[ ! -f "$ORDERS_FILE" ]] || [[ ! -f "$PRODUC
     echo "${RED}ERROR - Test data files not found. Please run from project root.${RESET}"
     exit 1
 fi
+echo "${GREEN}✓ All prerequisites met${RESET}"
 echo ""
 
 echo "-------------------- Building release binary --------------------"
@@ -77,91 +54,65 @@ echo "-------------------- Checking binary size --------------------"
 BINARY_PATH="target/release/rabbet"
 BINARY_SIZE_BYTES=$(stat -f%z "$BINARY_PATH" 2>/dev/null || stat -c%s "$BINARY_PATH")
 BINARY_SIZE_MB=$(echo "scale=2; $BINARY_SIZE_BYTES / 1024 / 1024" | bc -l)
+
 if (( $(echo "$BINARY_SIZE_MB > $BINARY_SIZE_LIMIT_MB" | bc -l) )); then
-    echo "${RED}Failure - Binary size ($BINARY_SIZE_MB MB) exceeds $BINARY_SIZE_LIMIT_MB MB limit!${RESET}"
+    echo "${RED}✗ Binary size ($BINARY_SIZE_MB MB) exceeds $BINARY_SIZE_LIMIT_MB MB limit!${RESET}"
     exit 1
 else
-    echo "${GREEN}Success - Binary size within $BINARY_SIZE_LIMIT_MB MB limit ($BINARY_SIZE_MB MB)${RESET}"
-
-    # Binary size benchmark (only for Bencher)
-    if $USE_BENCHER; then
-        echo ""
-        echo "${BLUE}Recording binary size for bencher ...${RESET}"
-        bencher run \
-            --project "$BENCHER_PROJECT" \
-            --branch "$BENCHER_BRANCH" \
-            --testbed "${BENCHER_TESTBED:-localhost}" \
-            --threshold-measure file-size \
-            --threshold-test static \
-            --threshold-lower-boundary _ \
-            --threshold-upper-boundary "$BINARY_SIZE_LIMIT_BYTES" \
-            --adapter json \
-            --file-size "$BINARY_PATH" \
-            "${BENCHER_GITHUB_ARG[@]}" \
-            --err \
-            "echo 'Binary size recorded'"
-    fi
+    echo "${GREEN}✓ Binary size: $BINARY_SIZE_MB MB (limit: $BINARY_SIZE_LIMIT_MB MB)${RESET}"
 fi
 echo ""
 
-
 echo "-------------------- Running benchmarks --------------------"
-# Function to run a benchmark (with or without Bencher)
+
+# Track benchmark results for summary
+declare -a BENCHMARK_NAMES
+declare -a BENCHMARK_TIMES
+declare -a BENCHMARK_PASSED
+FAILED_COUNT=0
+
+# Function to run a benchmark
 run_benchmark() {
     local name="$1"
     local command="$2"
-    local hyperfine_cmd="hyperfine --warmup 3 --runs 10"
-
-    echo ""
-    echo "Running $name benchmark..."
-
-    # Export to temp file for local analysis
     local temp_file="/tmp/${name}_results.json"
 
-    if $USE_BENCHER; then
-        # Export to stdout for Bencher
-        bencher run \
-            --project "$BENCHER_PROJECT" \
-            --branch "$BENCHER_BRANCH" \
-            --testbed "${BENCHER_TESTBED:-localhost}" \
-            --threshold-measure latency \
-            --threshold-test t_test \
-            --threshold-max-sample-size 64 \
-            --threshold-upper-boundary 0.99 \
-            --threshold-measure latency \
-            --threshold-test static \
-            --threshold-upper-boundary "$BASE_LATENCY_LIMIT_NS" \
-            --thresholds-reset \
-            --adapter shell_hyperfine \
-            "${BENCHER_GITHUB_ARG[@]}" \
-            --file "$temp_file" \
-            --err \
-            "$hyperfine_cmd --export-json $temp_file '$command'"
-    else
+    echo ""
+    echo "${BOLD}Benchmark: $name${RESET}"
+    echo "${BLUE}Command: $command${RESET}"
 
-        $hyperfine_cmd --export-json "$temp_file" "$command"
+    # Run hyperfine with JSON export
+    hyperfine \
+        --warmup 3 \
+        --runs 10 \
+        --export-json "$temp_file" \
+        "$command"
 
-        # Extract and show results
-        if [[ -f "$temp_file" ]]; then
-            local mean_time
-            local min_time
-            local max_time
+    # Extract and analyze results
+    if [[ -f "$temp_file" ]]; then
+        local mean_time
+        mean_time=$(jq -r '.results[0].mean' "$temp_file")
 
-            mean_time=$(jq -r '.results[0].mean' "$temp_file")
-            min_time=$(jq -r '.results[0].min' "$temp_file")
-            max_time=$(jq -r '.results[0].max' "$temp_file")
+        # Store results for summary
+        BENCHMARK_NAMES+=("$name")
+        BENCHMARK_TIMES+=("$mean_time")
 
-            printf "   Mean: %.4fs | Min: %.4fs | Max: %.4fs" "$mean_time" "$min_time" "$max_time"
-
-            if (( $(echo "$mean_time < $BASE_LATENCY_LIMIT_SEC" | bc -l) )); then
-                echo "${GREEN} Success - Mean time is less than $BASE_LATENCY_LIMIT_SEC seconds${RESET}"
-            else
-                echo "${RED} Failure - Mean time is greater than $BASE_LATENCY_LIMIT_SEC seconds${RESET}"
-            fi
+        # Check against threshold
+        if (( $(echo "$mean_time < $BASE_LATENCY_LIMIT_SEC" | bc -l) )); then
+            echo "${GREEN}✓ PASSED - Mean time: $(printf "%.4fs" "$mean_time") < ${BASE_LATENCY_LIMIT_SEC}s${RESET}"
+            BENCHMARK_PASSED+=(1)
+        else
+            echo "${RED}✗ FAILED - Mean time: $(printf "%.4fs" "$mean_time") > ${BASE_LATENCY_LIMIT_SEC}s${RESET}"
+            BENCHMARK_PASSED+=(0)
+            ((FAILED_COUNT++))
         fi
+
+        # Clean up temp file
+        rm -f "$temp_file"
     fi
 }
 
+# Run all benchmarks
 run_benchmark "cat" \
     "$BINARY_PATH cat $CUSTOMERS_FILE --format csv"
 
@@ -179,3 +130,36 @@ run_benchmark "query_filter" \
 
 run_benchmark "query_complex" \
     "$BINARY_PATH query $CUSTOMERS_FILE $ORDERS_FILE $PRODUCTS_FILE --as customers,orders,products -- \"SELECT c.customer_name, o.order_id, p.product_name, o.price FROM customers c JOIN orders o ON c.customer_id = o.customer_id JOIN products p ON o.product_id = p.product_id\""
+
+echo ""
+echo "==================== Benchmark Summary ===================="
+echo ""
+printf "%-20s %10s %10s\n" "Benchmark" "Time (s)" "Status"
+printf "%-20s %10s %10s\n" "---------" "--------" "------"
+
+for i in "${!BENCHMARK_NAMES[@]}"; do
+    name="${BENCHMARK_NAMES[$i]}"
+    time="${BENCHMARK_TIMES[$i]}"
+    passed="${BENCHMARK_PASSED[$i]}"
+
+    if [[ "$passed" == "1" ]]; then
+        status="${GREEN}PASSED${RESET}"
+    else
+        status="${RED}FAILED${RESET}"
+    fi
+
+    printf "%-20s %10.4f %10s\n" "$name" "$time" "$status"
+done
+
+echo ""
+echo "Binary Size: ${BINARY_SIZE_MB} MB / ${BINARY_SIZE_LIMIT_MB} MB"
+echo "Latency Threshold: ${BASE_LATENCY_LIMIT_SEC}s"
+echo ""
+
+if [[ $FAILED_COUNT -eq 0 ]]; then
+    echo "${GREEN}${BOLD}All benchmarks passed! 🎉${RESET}"
+    exit 0
+else
+    echo "${RED}${BOLD}$FAILED_COUNT benchmark(s) failed!${RESET}"
+    exit 1
+fi
