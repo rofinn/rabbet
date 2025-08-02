@@ -27,14 +27,10 @@ jobs:
         with:
           tool: cargo-llvm-cov, cargo-nextest
       - uses: Swatinem/rust-cache@v2 # zizmor: ignore[unpinned-uses]
-      - name: Compile
-        run: cargo check --locked
       - name: Format
         run: cargo fmt --all -- --check
       - name: Lint
-        run: cargo clippy --all-targets --all-features -- -D warnings
-      - name: Build
-        run: cargo build --locked
+        run: cargo clippy --all-targets --all-features --locked -- -D warnings
       - name: Test
         run: |
           cargo llvm-cov --no-report nextest
