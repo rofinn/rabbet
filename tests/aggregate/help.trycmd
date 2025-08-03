@@ -13,6 +13,8 @@ Arguments:
 Options:
       --by <BY>
           Columns to group by (comma separated)
+          
+          Examples: --by "category" or --by "category,region"
 
       --format <FORMAT>
           Output format
@@ -25,7 +27,11 @@ Options:
           - csv:   CSV format output
 
       --with <WITH>
-          Aggregation operations as column=operation pairs (comma separated) Operations: sum, mean, median, min, max, range, count, variance, stddev, first, last, describe Use _=operation for row-based operations (count, len, nrow)
+          Aggregation operations as column=operation pairs (comma separated)
+          
+          Operations: sum, mean, median, min, max, range, count, variance, stddev, first, last, describe
+          
+          Examples: - Single aggregation: --with "amount=sum" - Multiple aggregations: --with "amount=sum,price=mean,quantity=max" - Row-based operations: --with "_=count" (counts rows) - Multiple ops on same column: --with "price=min,price=max,price=mean"
 
       --delimiter <DELIMITER>
           Delimiter for input files

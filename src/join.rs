@@ -1,5 +1,5 @@
 use anyhow::{Context, Result, bail};
-use clap::{Args, ValueEnum};
+use clap::{Args, ValueEnum, ValueHint};
 use itertools::izip;
 use polars::prelude::{
     DataFrame, DataFrameJoinOps, JoinArgs as PolarsJoinArgs, JoinType as PolarsJoinType,
@@ -26,18 +26,31 @@ pub enum JoinType {
 #[derive(Args, Debug)]
 pub struct JoinArgs {
     /// Input tables (files or '-' for stdin)
-    #[arg(required = true)]
+    ///
+    /// Examples:
+    /// - Two files: users.csv orders.csv
+    /// - With stdin: - orders.csv
+    #[arg(required = true, value_hint = ValueHint::FilePath)]
     pub tables: Vec<String>,
 
     /// Name your tables
+    ///
+    /// Examples: --as "users,orders" or --as "u,o"
     #[arg(long, value_delimiter = ',')]
     pub r#as: Vec<String>,
 
     /// Columns to join on (comma separated)
+    ///
+    /// Examples:
+    /// - Single column: --on "`user_id`"
+    /// - Multiple columns: --on "`user_id,region`"
+    /// - Different names: --on "`id:user_id`" (join table1.id with `table2.user_id`)
     #[arg(long, value_delimiter = ',')]
     pub on: Vec<String>,
 
     /// Type of join to perform
+    ///
+    /// Options: inner (default), left, right, outer
     #[arg(long, value_enum, default_value = "inner")]
     pub r#type: JoinType,
 

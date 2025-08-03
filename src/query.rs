@@ -1,5 +1,5 @@
 use anyhow::{Context, Result, bail};
-use clap::Args;
+use clap::{Args, ValueHint};
 use itertools::izip;
 use polars::{prelude::IntoLazy, sql::SQLContext};
 
@@ -9,7 +9,7 @@ use crate::io::{read_data, write_data};
 #[derive(Args, Debug)]
 pub struct QueryArgs {
     /// Input tables to use in query (files or '-' for stdin)
-    #[arg(required = true)]
+    #[arg(required = true, value_hint = ValueHint::FilePath)]
     pub tables: Vec<String>,
 
     /// Name your tables

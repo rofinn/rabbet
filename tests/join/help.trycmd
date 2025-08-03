@@ -9,10 +9,14 @@ Usage: rabbet join [OPTIONS] <TABLES>...
 Arguments:
   <TABLES>...
           Input tables (files or '-' for stdin)
+          
+          Examples: - Two files: users.csv orders.csv - With stdin: - orders.csv
 
 Options:
       --as <AS>
           Name your tables
+          
+          Examples: --as "users,orders" or --as "u,o"
 
       --format <FORMAT>
           Output format
@@ -26,9 +30,13 @@ Options:
 
       --on <ON>
           Columns to join on (comma separated)
+          
+          Examples: - Single column: --on "`user_id`" - Multiple columns: --on "`user_id,region`" - Different names: --on "`id:user_id`" (join table1.id with `table2.user_id`)
 
       --type <TYPE>
           Type of join to perform
+          
+          Options: inner (default), left, right, outer
           
           [default: inner]
           [possible values: inner, left, right, outer]

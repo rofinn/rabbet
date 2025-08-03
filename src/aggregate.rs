@@ -1,5 +1,5 @@
 use anyhow::{Context, Result, bail, ensure};
-use clap::Args;
+use clap::{Args, ValueHint};
 use polars::prelude::*;
 
 use crate::args::OutputFormat;
@@ -8,16 +8,24 @@ use crate::io::{read_data, write_data};
 #[derive(Args, Debug)]
 pub struct AggregateArgs {
     /// Input table (file or '-' for stdin)
-    #[arg(required = true)]
+    #[arg(required = true, value_hint = ValueHint::FilePath)]
     pub table: String,
 
     /// Columns to group by (comma separated)
+    ///
+    /// Examples: --by "category" or --by "category,region"
     #[arg(long, value_delimiter = ',')]
     pub by: Vec<String>,
 
     /// Aggregation operations as column=operation pairs (comma separated)
+    ///
     /// Operations: sum, mean, median, min, max, range, count, variance, stddev, first, last, describe
-    /// Use _=operation for row-based operations (count, len, nrow)
+    ///
+    /// Examples:
+    /// - Single aggregation: --with "amount=sum"
+    /// - Multiple aggregations: --with "amount=sum,price=mean,quantity=max"
+    /// - Row-based operations: --with "_=count" (counts rows)
+    /// - Multiple ops on same column: --with "price=min,price=max,price=mean"
     #[arg(long, value_delimiter = ',')]
     pub with: Vec<String>,
 
