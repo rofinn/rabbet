@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use clap::Args;
+use clap::{Args, ValueHint};
 
 use crate::args::OutputFormat;
 use crate::io::{read_data, write_data};
@@ -7,7 +7,7 @@ use crate::io::{read_data, write_data};
 #[derive(Args, Debug)]
 pub struct TailArgs {
     /// Input table (file or '-' for stdin)
-    #[arg(required = true)]
+    #[arg(required = true, value_hint = ValueHint::FilePath)]
     pub table: String,
 
     /// Number of lines to display from the end

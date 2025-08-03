@@ -1,5 +1,6 @@
 use anyhow::Result;
-use clap::{Parser, ValueEnum};
+use clap::{CommandFactory, Parser, ValueEnum};
+use clap_complete::{Shell, generate};
 
 use crate::aggregate::AggregateArgs;
 use crate::cat::CatArgs;
@@ -19,7 +20,7 @@ pub enum OutputFormat {
 }
 
 #[derive(Parser, Debug)]
-#[command(author, version, about = "User-friendly CLI tool for joining tables")]
+#[command(name = "rabbet", about = "User-friendly CLI tool for joining tables")]
 pub struct Args {
     /// Output format
     #[arg(long, value_enum, default_value = "auto", global = true)]
@@ -48,6 +49,13 @@ pub enum Commands {
 
     /// Tail
     Tail(TailArgs),
+
+    /// Completions
+    Completions {
+        /// The shell to generate completions for
+        #[arg(value_enum)]
+        shell: Shell,
+    },
 }
 
 impl Args {
@@ -76,6 +84,10 @@ impl Args {
             Commands::Tail(tail_args) => {
                 tail_args.validate()?;
                 tail_args.execute(&self.format)?;
+            }
+            Commands::Completions { shell } => {
+                let mut cmd = Self::command();
+                generate(*shell, &mut cmd, "rabbet", &mut std::io::stdout());
             }
         }
         Ok(())
