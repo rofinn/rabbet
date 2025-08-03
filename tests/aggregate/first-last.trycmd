@@ -1,0 +1,24 @@
+Test aggregate command with first and last operations to get boundary values
+
+```console
+$ rabbet aggregate tests/data/iris/iris.csv --by Species --with PetalLength=first,PetalWidth=last
+╭───────────────────────────────────────────────────────╮
+│ Species           PetalLength_firs…   PetalWidth_last │
+╞═══════════════════════════════════════════════════════╡
+│ Iris-setosa       1.4                 0.2             │
+│ Iris-versicolor   4.7                 1.3             │
+│ Iris-virginica    6.0                 1.8             │
+╰───────────────────────────────────────────────────────╯
+
+```
+
+Test first and last operations with CSV format
+
+```console
+$ rabbet aggregate tests/data/iris/iris.csv --by Species --with PetalLength=first,PetalWidth=last --format csv
+Species,PetalLength_first,PetalWidth_last
+Iris-setosa,1.4,0.2
+Iris-versicolor,4.7,1.3
+Iris-virginica,6.0,1.8
+
+```

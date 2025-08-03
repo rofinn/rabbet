@@ -1,7 +1,7 @@
 Test tail command with table format output
 
 ```console
-$ rabbet tail tests/data/basic/orders.csv -n 3
+$ rabbet tail tests/data/orders/orders.csv -n 3
 ╭────────────────────────────────────────────────────────────────────────╮
 │ order_id    customer_id    product_id    quantity   price   order_date │
 ╞════════════════════════════════════════════════════════════════════════╡

@@ -65,9 +65,9 @@ mod tests {
     }
 
     #[test]
-    fn test_head_basic_csv() {
+    fn test_head_orders_csv() {
         let args = HeadArgs {
-            table: "tests/data/basic/orders.csv".to_string(),
+            table: "tests/data/orders/orders.csv".to_string(),
             n: 2,
         };
 

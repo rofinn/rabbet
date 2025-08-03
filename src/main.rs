@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 
+mod aggregate;
 mod args;
 mod cat;
 mod head;

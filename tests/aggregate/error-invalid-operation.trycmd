@@ -1,0 +1,35 @@
+Test aggregate command with invalid operation name
+
+```console
+$ rabbet aggregate tests/data/iris/iris.csv --by Species --with PetalLength=invalid
+? 1
+Error: Invalid operation 'invalid'. Valid operations: sum, mean, median, min, max, range, count, len, nrow, variance, stddev, first, last, describe
+
+```
+
+Test aggregate command with mode operation which is no longer supported
+
+```console
+$ rabbet aggregate tests/data/iris/iris.csv --by Species --with PetalLength=mode
+? 1
+Error: Invalid operation 'mode'. Valid operations: sum, mean, median, min, max, range, count, len, nrow, variance, stddev, first, last, describe
+
+```
+
+Test aggregate command with empty operation
+
+```console
+$ rabbet aggregate tests/data/iris/iris.csv --by Species --with PetalLength=
+? 1
+Error: Invalid operation ''. Valid operations: sum, mean, median, min, max, range, count, len, nrow, variance, stddev, first, last, describe
+
+```
+
+Test aggregate command with case-sensitive operation name
+
+```console
+$ rabbet aggregate tests/data/iris/iris.csv --with SepalLength=SUM
+? 1
+Error: Invalid operation 'SUM'. Valid operations: sum, mean, median, min, max, range, count, len, nrow, variance, stddev, first, last, describe
+
+```

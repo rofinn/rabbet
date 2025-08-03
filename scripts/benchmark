@@ -35,9 +35,9 @@ if ! command -v hyperfine &> /dev/null; then
 fi
 
 # Check for test data files
-CUSTOMERS_FILE="tests/data/basic/customers.csv"
-ORDERS_FILE="tests/data/basic/orders.csv"
-PRODUCTS_FILE="tests/data/basic/products.csv"
+CUSTOMERS_FILE="tests/data/orders/customers.csv"
+ORDERS_FILE="tests/data/orders/orders.csv"
+PRODUCTS_FILE="tests/data/orders/products.csv"
 
 if [[ ! -f "$CUSTOMERS_FILE" ]] || [[ ! -f "$ORDERS_FILE" ]] || [[ ! -f "$PRODUCTS_FILE" ]]; then
     echo "${RED}ERROR - Test data files not found. Please run from project root.${RESET}"
