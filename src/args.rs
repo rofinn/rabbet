@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
 
+use crate::aggregate::AggregateArgs;
 use crate::cat::CatArgs;
 use crate::head::HeadArgs;
 use crate::join::JoinArgs;
@@ -30,6 +31,9 @@ pub struct Args {
 
 #[derive(clap::Subcommand, Debug)]
 pub enum Commands {
+    /// Aggregate
+    Aggregate(AggregateArgs),
+
     /// Cat
     Cat(CatArgs),
 
@@ -49,6 +53,10 @@ pub enum Commands {
 impl Args {
     pub fn run(&self) -> Result<()> {
         match &self.command {
+            Commands::Aggregate(aggregate_args) => {
+                aggregate_args.validate()?;
+                aggregate_args.execute(&self.format)?;
+            }
             Commands::Join(join_args) => {
                 join_args.validate()?;
                 join_args.execute(&self.format)?;

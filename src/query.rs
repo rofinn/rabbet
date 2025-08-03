@@ -112,7 +112,7 @@ mod tests {
 
     #[test]
     fn test_query_orders_product_filter() {
-        let orders_path = "tests/data/basic/orders.csv";
+        let orders_path = "tests/data/orders/orders.csv";
 
         let args = QueryArgs {
             tables: vec![orders_path.to_string()],
@@ -129,7 +129,7 @@ mod tests {
 
     #[test]
     fn test_query_orders_default_table_name() {
-        let orders_path = "tests/data/basic/orders.csv";
+        let orders_path = "tests/data/orders/orders.csv";
 
         let args = QueryArgs {
             tables: vec![orders_path.to_string()],

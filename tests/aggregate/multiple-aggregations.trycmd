@@ -1,0 +1,13 @@
+Test aggregate command with multiple aggregation operations on the same group
+
+```console
+$ rabbet aggregate tests/data/iris/iris.csv --by Species --with PetalLength=mean,PetalWidth=max,SepalLength=min
+╭───────────────────────────────────────────────────────────────────────╮
+│ Species           PetalLength_mean   PetalWidth_max   SepalLength_min │
+╞═══════════════════════════════════════════════════════════════════════╡
+│ Iris-setosa       1.464              0.6              4.3             │
+│ Iris-versicolor   4.26               1.8              4.9             │
+│ Iris-virginica    5.552              2.5              4.9             │
+╰───────────────────────────────────────────────────────────────────────╯
+
+```

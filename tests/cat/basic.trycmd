@@ -1,7 +1,7 @@
 Test cat command with table format output
 
 ```console
-$ rabbet cat tests/data/basic/orders.csv
+$ rabbet cat tests/data/orders/orders.csv
 ╭────────────────────────────────────────────────────────────────────────╮
 │ order_id    customer_id    product_id    quantity   price   order_date │
 ╞════════════════════════════════════════════════════════════════════════╡

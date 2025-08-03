@@ -1,0 +1,26 @@
+Test aggregate command with invalid underscore usage - underscore can only be used with row-based operations
+
+```console
+$ rabbet aggregate tests/data/iris/iris.csv --by Species --with _=mean
+? 1
+Error: Invalid operation 'mean'. '_' can only be used with row-based operations: count, len, nrow
+
+```
+
+Test aggregate command with invalid underscore usage for sum operation
+
+```console
+$ rabbet aggregate tests/data/iris/iris.csv --by Species --with _=sum
+? 1
+Error: Invalid operation 'sum'. '_' can only be used with row-based operations: count, len, nrow
+
+```
+
+Test aggregate command with invalid underscore usage for max operation
+
+```console
+$ rabbet aggregate tests/data/iris/iris.csv --with _=max
+? 1
+Error: Invalid operation 'max'. '_' can only be used with row-based operations: count, len, nrow
+
+```

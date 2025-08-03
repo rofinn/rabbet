@@ -1,0 +1,13 @@
+Test aggregate command with row-based operations using underscore
+
+```console
+$ rabbet aggregate tests/data/iris/iris.csv --by Species --with _=len
+╭───────────────────────╮
+│ Species           len │
+╞═══════════════════════╡
+│ Iris-setosa       50  │
+│ Iris-versicolor   50  │
+│ Iris-virginica    50  │
+╰───────────────────────╯
+
+```

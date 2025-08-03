@@ -1,7 +1,7 @@
 Test head command with table format output
 
 ```console
-$ rabbet head tests/data/basic/orders.csv -n 3
+$ rabbet head tests/data/orders/orders.csv -n 3
 ╭────────────────────────────────────────────────────────────────────────╮
 │ order_id    customer_id    product_id    quantity   price   order_date │
 ╞════════════════════════════════════════════════════════════════════════╡

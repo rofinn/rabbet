@@ -22,7 +22,7 @@ $ cargo install --git https://github.com/rofinn/rabbet.git
 Join two CSV files on matching columns:
 
 ```console
-$ rabbet join tests/data/basic/customers.csv tests/data/basic/orders.csv --on customer_id
+$ rabbet join tests/data/orders/customers.csv tests/data/orders/orders.csv --on customer_id
 ╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ customer_id    customer_name     customer_email      customer_phone   customer_address   customer_city   customer_state   customer_zipcode   customer_country   order_id    product_id    quantity   price   order_date │
 ╞═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╡
@@ -33,7 +33,7 @@ $ rabbet join tests/data/basic/customers.csv tests/data/basic/orders.csv --on cu
 │ CUSTOMER-005   Robert Brown      robert.brown@exa…   555-3698         654 Maple St       Anytown         CA               90210              USA                ORDER-005   PRODUCT-001   5          50.0    2022-01-05 │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-$ rabbet query --as orders tests/data/basic/orders.csv -- "SELECT * FROM orders WHERE product_id = 'PRODUCT-005'"
+$ rabbet query --as orders tests/data/orders/orders.csv -- "SELECT * FROM orders WHERE product_id = 'PRODUCT-005'"
 ╭────────────────────────────────────────────────────────────────────────╮
 │ order_id    customer_id    product_id    quantity   price   order_date │
 ╞════════════════════════════════════════════════════════════════════════╡
@@ -43,7 +43,7 @@ $ rabbet query --as orders tests/data/basic/orders.csv -- "SELECT * FROM orders 
 
 ```
 
-This performs an inner join between `tests/data/basic/customers.csv` and `tests/data/basic/orders.csv` on the `customer_id`.
+This performs an inner join between `tests/data/orders/customers.csv` and `tests/data/orders/orders.csv` on the `customer_id`.
 
 ## Development
 
@@ -90,7 +90,7 @@ $ TRYCMD=overwrite cargo test --test cli_tests
 I don't have any specific benchmarks setup yet, but I haven been comparing against `join` with `hyperfine`.
 
 ```console
-$ hyperfine -N --warmup 1 'rabbet join tests/data/basic/orders.csv tests/data/basic/customers.csv --on customer_id'
+$ hyperfine -N --warmup 1 'rabbet join tests/data/orders/orders.csv tests/data/orders/customers.csv --on customer_id'
 ```
 
 ## Contributing

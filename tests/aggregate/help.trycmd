@@ -1,0 +1,38 @@
+Test aggregate help command to show available options and usage
+
+```console
+$ rabbet aggregate --help
+Aggregate
+
+Usage: rabbet aggregate [OPTIONS] <TABLE>
+
+Arguments:
+  <TABLE>
+          Input table (file or '-' for stdin)
+
+Options:
+      --by <BY>
+          Columns to group by (comma separated)
+
+      --format <FORMAT>
+          Output format
+          
+          [default: auto]
+
+          Possible values:
+          - auto:  Automatically detect based on terminal (default)
+          - table: Table format output
+          - csv:   CSV format output
+
+      --with <WITH>
+          Aggregation operations as column=operation pairs (comma separated) Operations: sum, mean, median, min, max, range, count, variance, stddev, first, last, describe Use _=operation for row-based operations (count, len, nrow)
+
+      --delimiter <DELIMITER>
+          Delimiter for input files
+          
+          [default: ,]
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```
