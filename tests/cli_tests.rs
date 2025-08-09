@@ -7,8 +7,8 @@
 //! ## Test Cases
 //!
 //! - `README.md`: Tests the examples in the README, specifically the join and query commands
-//! - `tests/cmd/*.toml`: TOML-based test cases for more complex scenarios
-//! - `tests/cmd/*.trycmd`: Markdown-style test cases (like help commands)
+//! - `examples/cmd/*.toml`: TOML-based test cases for more complex scenarios
+//! - `examples/cmd/*.trycmd`: Markdown-style test cases (like help commands)
 //!
 //! ## Running Tests
 //!
@@ -38,6 +38,6 @@ fn cli_tests() {
         .env("POLARS_TABLE_WIDTH", "220")
         .env("RABBET_TABLE_OUTPUT", "1")
         .case("README.md")
-        .case("tests/**/*.toml")
-        .case("tests/**/*.trycmd");
+        .case("examples/**/*.toml")
+        .case("examples/**/*.trycmd");
 }

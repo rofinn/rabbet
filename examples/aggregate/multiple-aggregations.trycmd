@@ -1,7 +1,7 @@
 Test aggregate command with multiple aggregation operations on the same group
 
 ```console
-$ rabbet aggregate tests/data/iris/iris.csv --by Species --with PetalLength=mean,PetalWidth=max,SepalLength=min
+$ rabbet aggregate data/iris/iris.csv --by Species --with PetalLength=mean,PetalWidth=max,SepalLength=min
 ╭───────────────────────────────────────────────────────────────────────╮
 │ Species           PetalLength_mean   PetalWidth_max   SepalLength_min │
 ╞═══════════════════════════════════════════════════════════════════════╡

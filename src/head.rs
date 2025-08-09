@@ -67,7 +67,7 @@ mod tests {
     #[test]
     fn test_head_orders_csv() {
         let args = HeadArgs {
-            table: "tests/data/orders/orders.csv".to_string(),
+            table: "data/orders/orders.csv".to_string(),
             n: 2,
         };
 

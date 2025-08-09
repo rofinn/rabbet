@@ -2,6 +2,7 @@ use anyhow::{Context, Result, bail};
 use clap::{Args, ValueHint};
 use itertools::izip;
 use polars::{prelude::IntoLazy, sql::SQLContext};
+use std::io::{self, Read};
 
 use crate::args::OutputFormat;
 use crate::io::{read_data, write_data};
@@ -16,9 +17,9 @@ pub struct QueryArgs {
     #[arg(long, value_delimiter = ',')]
     pub r#as: Vec<String>,
 
-    /// The SQL query to execute
-    #[arg(required = true, last = true)]
-    pub query: String,
+    /// The SQL query to execute (reads from stdin if not provided)
+    #[arg(last = true)]
+    pub query: Option<String>,
 }
 
 impl QueryArgs {
@@ -53,9 +54,24 @@ impl QueryArgs {
             );
         }
 
+        // Get the query either from the argument or from stdin
+        let query = match &self.query {
+            Some(q) if q != "-" => q.clone(),
+            _ => {
+                let mut buffer = String::new();
+                io::stdin()
+                    .read_to_string(&mut buffer)
+                    .context("Failed to read query from stdin")?;
+                buffer.trim().to_string()
+            }
+        };
+
+        if query.is_empty() {
+            bail!("Query cannot be empty");
+        }
         let result = ctx
-            .execute(&self.query)
-            .with_context(|| format!("query - failed to execute query '{}'", self.query))?
+            .execute(&query)
+            .with_context(|| format!("query - failed to execute query '{query}'"))?
             .collect()
             .with_context(|| "query - failed to collect results".to_string())?;
 
@@ -75,7 +91,7 @@ mod tests {
         let args = QueryArgs {
             tables: vec!["test.csv".to_string()],
             r#as: vec![],
-            query: "SELECT * FROM T1".to_string(),
+            query: Some("SELECT * FROM T1".to_string()),
         };
         assert!(args.validate().is_ok());
     }
@@ -85,7 +101,7 @@ mod tests {
         let args = QueryArgs {
             tables: vec![],
             r#as: vec![],
-            query: "SELECT * FROM T1".to_string(),
+            query: Some("SELECT * FROM T1".to_string()),
         };
         assert!(args.validate().is_err());
     }
@@ -95,7 +111,7 @@ mod tests {
         let args = QueryArgs {
             tables: vec!["test1.csv".to_string(), "test2.csv".to_string()],
             r#as: vec!["table1".to_string()],
-            query: "SELECT * FROM table1".to_string(),
+            query: Some("SELECT * FROM table1".to_string()),
         };
         assert!(args.validate().is_err());
     }
@@ -105,19 +121,21 @@ mod tests {
         let args = QueryArgs {
             tables: vec!["test1.csv".to_string(), "test2.csv".to_string()],
             r#as: vec!["table1".to_string(), "table2".to_string()],
-            query: "SELECT * FROM table1".to_string(),
+            query: Some("SELECT * FROM table1".to_string()),
         };
         assert!(args.validate().is_ok());
     }
 
     #[test]
     fn test_query_orders_product_filter() {
-        let orders_path = "tests/data/orders/orders.csv";
+        let orders_path = "data/orders/orders.csv";
 
         let args = QueryArgs {
             tables: vec![orders_path.to_string()],
             r#as: vec!["orders".to_string()],
-            query: "SELECT * FROM orders WHERE product_id = 'PRODUCT-005'".to_string(),
+            query: Some(
+                "SELECT * FROM orders WHERE product_id = 'PRODUCT-005'".to_string(),
+            ),
         };
 
         assert!(args.validate().is_ok());
@@ -129,12 +147,12 @@ mod tests {
 
     #[test]
     fn test_query_orders_default_table_name() {
-        let orders_path = "tests/data/orders/orders.csv";
+        let orders_path = "data/orders/orders.csv";
 
         let args = QueryArgs {
             tables: vec![orders_path.to_string()],
             r#as: vec![],
-            query: "SELECT * FROM T1 WHERE product_id = 'PRODUCT-005'".to_string(),
+            query: Some("SELECT * FROM T1 WHERE product_id = 'PRODUCT-005'".to_string()),
         };
 
         assert!(args.validate().is_ok());

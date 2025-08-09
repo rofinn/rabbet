@@ -1,0 +1,30 @@
+Test query command with complex multi-table join
+
+Example for docs (if you're using zsh or bash)
+"""
+rabbet query --as customers data/orders/customers.csv --as orders data/orders/orders.csv -- <<EOF
+SELECT
+    c.customer_name,
+    c.customer_city,
+    COUNT(o.order_id) as order_count,
+    SUM(o.quantity * o.price) as total_spent,
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_name, c.customer_city
+HAVING order_count > 0
+ORDER BY total_spent DESC
+EOF
+"""
+
+Actual test
+```console
+$ rabbet query --as customers data/orders/customers.csv --as orders data/orders/orders.csv -- "SELECT c.customer_name, c.customer_city, COUNT(o.order_id) as order_count, SUM(o.quantity * o.price) as total_spent FROM customers c LEFT JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_name, c.customer_city HAVING order_count > 0 ORDER BY total_spent DESC"
+╭─────────────────────────────────────────────────────────────╮
+│ customer_name     customer_city   order_count   total_spent │
+╞═════════════════════════════════════════════════════════════╡
+│ Robert Brown      Anytown         1             250.0       │
+│ Emily Davis       Anytown         1             160.0       │
+│ Michael Johnson   Anytown         3             140.0       │
+╰─────────────────────────────────────────────────────────────╯
+
+```

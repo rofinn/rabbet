@@ -1,7 +1,7 @@
 Test aggregate command with multiple group-by columns
 
 ```console
-$ rabbet aggregate tests/data/iris/iris.csv --by Species,PetalWidth --with SepalLength=max
+$ rabbet aggregate data/iris/iris.csv --by Species,PetalWidth --with SepalLength=max
 ╭────────────────────────────────────────────────╮
 │ Species           PetalWidth   SepalLength_max │
 ╞════════════════════════════════════════════════╡
