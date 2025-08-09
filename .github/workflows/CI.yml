@@ -52,10 +52,11 @@ jobs:
         with:
           mdbook-version: "latest"
       - name: Build documentation
+        working-directory: docs
         run: mdbook build
       - name: Check for broken links
         run: |
           # Install linkchecker if needed
           sudo apt-get update && sudo apt-get install -y linkchecker || true
           # Run link checking on the built book (allow some common false positives)
-          linkchecker book/ --ignore-url='^mailto:' --ignore-url='^https://github.com/.*/(issues|pull)' || true
+          linkchecker docs/book/ --ignore-url='^mailto:' --ignore-url='^https://github.com/.*/(issues|pull)' || true
