@@ -1,7 +1,7 @@
 Test join command with CSV format output
 
 ```console
-$ rabbet join tests/data/orders/customers.csv tests/data/orders/orders.csv --on customer_id --format csv
+$ rabbet join data/orders/customers.csv data/orders/orders.csv --on customer_id --format csv
 customer_id,customer_name,customer_email,customer_phone,customer_address,customer_city,customer_state,customer_zipcode,customer_country,order_id,product_id,quantity,price,order_date
 CUSTOMER-003,Michael Johnson,michael.johnson@example.com,555-9876,789 Oak St,Anytown,CA,90210,USA,ORDER-001,PRODUCT-005,1,10.0,2022-01-01
 CUSTOMER-003,Michael Johnson,michael.johnson@example.com,555-9876,789 Oak St,Anytown,CA,90210,USA,ORDER-002,PRODUCT-005,2,20.0,2022-01-02

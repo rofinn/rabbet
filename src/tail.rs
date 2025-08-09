@@ -66,7 +66,7 @@ mod tests {
     #[test]
     fn test_tail_orders_csv() {
         let args = TailArgs {
-            table: "tests/data/orders/orders.csv".to_string(),
+            table: "data/orders/orders.csv".to_string(),
             n: 2,
         };
 

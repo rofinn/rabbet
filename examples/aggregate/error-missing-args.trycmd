@@ -1,7 +1,7 @@
 Test aggregate command without required --with argument
 
 ```console
-$ rabbet aggregate tests/data/iris/iris.csv
+$ rabbet aggregate data/iris/iris.csv
 ? 1
 Error: At least one aggregation operation must be specified with --with
 
@@ -10,7 +10,7 @@ Error: At least one aggregation operation must be specified with --with
 Test aggregate command with --with flag but no value
 
 ```console
-$ rabbet aggregate tests/data/iris/iris.csv --with
+$ rabbet aggregate data/iris/iris.csv --with
 ? 2
 error: a value is required for '--with <WITH>' but none was supplied
 
@@ -21,7 +21,7 @@ For more information, try '--help'.
 Test aggregate command with invalid aggregation specification format (missing equals sign)
 
 ```console
-$ rabbet aggregate tests/data/iris/iris.csv --by Species --with PetalLength
+$ rabbet aggregate data/iris/iris.csv --by Species --with PetalLength
 ? 1
 Error: Invalid aggregation specification 'PetalLength'. Expected format: column=operation
 
@@ -30,7 +30,7 @@ Error: Invalid aggregation specification 'PetalLength'. Expected format: column=
 Test aggregate command with multiple invalid specifications
 
 ```console
-$ rabbet aggregate tests/data/iris/iris.csv --with col1,col2,col3
+$ rabbet aggregate data/iris/iris.csv --with col1,col2,col3
 ? 1
 Error: Invalid aggregation specification 'col1'. Expected format: column=operation
 

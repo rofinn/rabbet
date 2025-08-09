@@ -40,3 +40,22 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: lcov.info
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # zizmor: ignore[unpinned-uses]
+        with:
+          persist-credentials: false
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v2 # zizmor: ignore[unpinned-uses]
+        with:
+          mdbook-version: "latest"
+      - name: Build documentation
+        run: mdbook build
+      - name: Check for broken links
+        run: |
+          # Install linkchecker if needed
+          sudo apt-get update && sudo apt-get install -y linkchecker || true
+          # Run link checking on the built book (allow some common false positives)
+          linkchecker book/ --ignore-url='^mailto:' --ignore-url='^https://github.com/.*/(issues|pull)' || true

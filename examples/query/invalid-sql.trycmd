@@ -1,7 +1,7 @@
 Test query command with invalid SQL syntax
 
 ```console
-$ rabbet query tests/data/orders/orders.csv -- "SELECT * FORM orders"
+$ rabbet query data/orders/orders.csv -- "SELECT * FORM orders"
 ? 1
 Error: query - failed to execute query 'SELECT * FORM orders'
 

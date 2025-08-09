@@ -1,7 +1,7 @@
 Test aggregate command with row-based operations using underscore
 
 ```console
-$ rabbet aggregate tests/data/iris/iris.csv --by Species --with _=len
+$ rabbet aggregate data/iris/iris.csv --by Species --with _=len
 ╭───────────────────────╮
 │ Species           len │
 ╞═══════════════════════╡

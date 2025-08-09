@@ -1,13 +1,12 @@
-Test tail command with table format output
+Test query command with simple SELECT statement
 
 ```console
-$ rabbet tail tests/data/orders/orders.csv -n 3
+$ rabbet query --as orders data/orders/orders.csv -- "SELECT * FROM orders WHERE product_id = 'PRODUCT-005'"
 ╭────────────────────────────────────────────────────────────────────────╮
 │ order_id    customer_id    product_id    quantity   price   order_date │
 ╞════════════════════════════════════════════════════════════════════════╡
-│ ORDER-004   CUSTOMER-004   PRODUCT-002   4          40.0    2022-01-04 │
-│ ORDER-005   CUSTOMER-005   PRODUCT-001   5          50.0    2022-01-05 │
-│ ORDER-006   CUSTOMER-006   PRODUCT-004   6          60.0    2022-01-06 │
+│ ORDER-001   CUSTOMER-003   PRODUCT-005   1          10.0    2022-01-01 │
+│ ORDER-002   CUSTOMER-003   PRODUCT-005   2          20.0    2022-01-02 │
 ╰────────────────────────────────────────────────────────────────────────╯
 
 ```

@@ -6,7 +6,7 @@
 CLI to simplify shell scripts and glue code operating on relational data.
 
 <p align="center">
-    <img src="./docs/rabbet.svg" alt="Rabbet Joint Diagram" width="400" />
+    <img src="https://raw.githubusercontent.com/rofinn/rabbet/main/docs/rabbet.svg" alt="Rabbet Joint Diagram" width="400" />
 </p>
 
 ## Installation
@@ -22,7 +22,7 @@ $ cargo install --git https://github.com/rofinn/rabbet.git
 Join two CSV files on matching columns:
 
 ```console
-$ rabbet join tests/data/orders/customers.csv tests/data/orders/orders.csv --on customer_id
+$ rabbet join data/orders/customers.csv data/orders/orders.csv --on customer_id
 ╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ customer_id    customer_name     customer_email      customer_phone   customer_address   customer_city   customer_state   customer_zipcode   customer_country   order_id    product_id    quantity   price   order_date │
 ╞═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╡
@@ -33,72 +33,4 @@ $ rabbet join tests/data/orders/customers.csv tests/data/orders/orders.csv --on 
 │ CUSTOMER-005   Robert Brown      robert.brown@exa…   555-3698         654 Maple St       Anytown         CA               90210              USA                ORDER-005   PRODUCT-001   5          50.0    2022-01-05 │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-$ rabbet query --as orders tests/data/orders/orders.csv -- "SELECT * FROM orders WHERE product_id = 'PRODUCT-005'"
-╭────────────────────────────────────────────────────────────────────────╮
-│ order_id    customer_id    product_id    quantity   price   order_date │
-╞════════════════════════════════════════════════════════════════════════╡
-│ ORDER-001   CUSTOMER-003   PRODUCT-005   1          10.0    2022-01-01 │
-│ ORDER-002   CUSTOMER-003   PRODUCT-005   2          20.0    2022-01-02 │
-╰────────────────────────────────────────────────────────────────────────╯
-
 ```
-
-This performs an inner join between `tests/data/orders/customers.csv` and `tests/data/orders/orders.csv` on the `customer_id`.
-
-## Development
-
-### Formatting
-
-```console
-$ cargo fmt
-```
-
-### Linting
-
-```console
-$ cargo clippy --fix --allow-dirty
-```
-
-### Running Tests
-
-Run all tests (unit + integration):
-
-```console
-$ cargo test
-```
-
-Run tests with coverage:
-
-```console
-$ cargo llvm-cov
-```
-
-Run only CLI integration tests:
-
-```console
-$ cargo test --test cli_tests
-```
-
-Update CLI test snapshots:
-
-```console
-$ TRYCMD=overwrite cargo test --test cli_tests
-```
-
-### Benchmarking
-
-I don't have any specific benchmarks setup yet, but I haven been comparing against `join` with `hyperfine`.
-
-```console
-$ hyperfine -N --warmup 1 'rabbet join tests/data/orders/orders.csv tests/data/orders/customers.csv --on customer_id'
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request

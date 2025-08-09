@@ -58,7 +58,7 @@ mod tests {
     #[test]
     fn test_cat_orders_csv() {
         let args = CatArgs {
-            table: "tests/data/orders/orders.csv".to_string(),
+            table: "data/orders/orders.csv".to_string(),
         };
 
         assert!(args.validate().is_ok());

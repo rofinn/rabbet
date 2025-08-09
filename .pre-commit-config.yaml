@@ -20,7 +20,7 @@ repos:
     hooks:
       - id: codespell
         args: [--builtin=clear, rare, informal, usage, code, names]
-        exclude: ^(Cargo\.lock|target/|\.github/.*\.yml)$
+        exclude: ^(Cargo\.lock|target/|\.github/.*\.yml|docs/book/.*\.js|docs/book/.*\.svg)$
 
   # Rust-specific checks (using local hooks)
   - repo: local

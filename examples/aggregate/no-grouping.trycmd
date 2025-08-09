@@ -1,7 +1,7 @@
 Test aggregate command without grouping - aggregates over entire dataset
 
 ```console
-$ rabbet aggregate tests/data/iris/iris.csv --with SepalLength=mean,PetalLength=stddev
+$ rabbet aggregate data/iris/iris.csv --with SepalLength=mean,PetalLength=stddev
 ╭──────────────────────────────────────╮
 │ SepalLength_mean   PetalLength_stdd… │
 ╞══════════════════════════════════════╡
@@ -13,7 +13,7 @@ $ rabbet aggregate tests/data/iris/iris.csv --with SepalLength=mean,PetalLength=
 Test aggregate command with row count on entire dataset
 
 ```console
-$ rabbet aggregate tests/data/iris/iris.csv --with _=count
+$ rabbet aggregate data/iris/iris.csv --with _=count
 ╭───────╮
 │ count │
 ╞═══════╡
@@ -25,7 +25,7 @@ $ rabbet aggregate tests/data/iris/iris.csv --with _=count
 Test aggregate command with multiple aggregations on same column without grouping
 
 ```console
-$ rabbet aggregate tests/data/iris/iris.csv --with PetalWidth=min,PetalWidth=max,PetalWidth=mean
+$ rabbet aggregate data/iris/iris.csv --with PetalWidth=min,PetalWidth=max,PetalWidth=mean
 ╭───────────────────────────────────────────────────╮
 │ PetalWidth_min   PetalWidth_max   PetalWidth_mean │
 ╞═══════════════════════════════════════════════════╡
@@ -37,7 +37,7 @@ $ rabbet aggregate tests/data/iris/iris.csv --with PetalWidth=min,PetalWidth=max
 Test aggregate command with CSV format output and no grouping
 
 ```console
-$ rabbet aggregate tests/data/iris/iris.csv --with SepalLength=count,PetalLength=variance --format csv
+$ rabbet aggregate data/iris/iris.csv --with SepalLength=count,PetalLength=variance --format csv
 SepalLength_count,PetalLength_variance
 150,3.11317941834452
 

@@ -1,7 +1,7 @@
 Test aggregate command with describe operation to get summary statistics
 
 ```console
-$ rabbet aggregate tests/data/iris/iris.csv --by Species --with PetalLength=describe
+$ rabbet aggregate data/iris/iris.csv --by Species --with PetalLength=describe
 ╭─────────────────────────────────────╮
 │ Species           PetalLength_desc… │
 ╞═════════════════════════════════════╡
@@ -15,7 +15,7 @@ $ rabbet aggregate tests/data/iris/iris.csv --by Species --with PetalLength=desc
 Test describe operation with CSV format to see full output
 
 ```console
-$ rabbet aggregate tests/data/iris/iris.csv --by Species --with PetalLength=describe --format csv
+$ rabbet aggregate data/iris/iris.csv --by Species --with PetalLength=describe --format csv
 Species,PetalLength_describe
 Iris-setosa,"count: 50, mean: 1.464, std: 0.1735111594364455, min: 1.0, max: 1.9"
 Iris-versicolor,"count: 50, mean: 4.26, std: 0.46991097723995784, min: 3.0, max: 5.1"
